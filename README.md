@@ -1,4 +1,4 @@
-# RICESWAP -- PROTOCOL RCN20 --
+# RICESWAP -- PROTOCOLS --
 
 This repository is based on our protocols so that everyone can integrate and participate in a sea of ​​opportunities in their own projects
 
