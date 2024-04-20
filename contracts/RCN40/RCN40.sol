@@ -3,15 +3,15 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./IRCN20Error.sol";
+import "./IRCN40Error.sol";
 import "./ICanPayHolders.sol";
 
-contract RCN20 is IRCN20Errors, ReentrancyGuard{
+contract RCN40 is IRCN40Errors, ReentrancyGuard{
 
     IERC20 tknAddress;
     IERC20 tknBacked;
 
-    uint8 immutable monthlyFee = 1; 
+    uint8 public monthlyFee = 1; 
     string constant segment = "Investimento";
     address public owner;
     uint256 public timer = 30 *24 *60 *60;
@@ -45,7 +45,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
          ||
            address(_tokenBacked) == address(0))
          {
-             revert RCN20InitializeAddress(_tokenAddress, _tokenBacked);
+             revert RCN40InitializeAddress(_tokenAddress, _tokenBacked);
          }
 
         tknAddress = IERC20(_tokenAddress);
@@ -62,13 +62,13 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     {
 
         if(tknAddress.balanceOf(msg.sender) < amount){
-            revert RCN20InsufficientBalance(amount);
+            revert RCN40InsufficientBalance(amount);
         }
         else if(amount <= 0){
-            revert RCN20Amount(amount);
+            revert RCN40Amount(amount);
         }
 
-        if(tknAddress.allowance(msg.sender, address(this)) < amount) revert RCN20Approve(false);
+        if(tknAddress.allowance(msg.sender, address(this)) < amount) revert RCN40Approve(false);
 
          (bool success) = tknAddress.transferFrom(
           msg.sender, 
@@ -97,12 +97,12 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
 
         if(block.timestamp < timeLock[msg.sender] + timer)
         {
-            revert RCN20TimeNotExpired(timer);
+            revert RCN40TimeNotExpired(timer);
         }
 
         if(_farming[msg.sender] < amount)
         {
-            revert RCN20InsufficientFarming(amount);
+            revert RCN40InsufficientFarming(amount);
         }
 
         timeLock[msg.sender] = block.timestamp;
@@ -128,15 +128,15 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
 
         if(amount <= 0)
         {
-            revert RCN20NotFarmingTokens(amount);
+            revert RCN40NotFarmingTokens(amount);
         }
         else if(block.timestamp <= timeLock[msg.sender] + timer)
         {
-            revert RCN20TimeNotExpired(block.timestamp);
+            revert RCN40TimeNotExpired(block.timestamp);
         }
         else if(tknBacked.balanceOf(address(this)) < amount)
         {
-            revert RCN20InsufficientBalance(amount);
+            revert RCN40InsufficientBalance(amount);
         }
 
         uint256 timeInSeconds = block.timestamp - timeLock[msg.sender];
@@ -204,15 +204,15 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
 
         if(amount <= 0)
         {
-            revert RCN20NotFarmingTokens(amount);
+            revert RCN40NotFarmingTokens(amount);
         }
         else if(block.timestamp <= timeLock[_address] + timer)
         {
-            revert RCN20TimeNotExpired(block.timestamp);
+            revert RCN40TimeNotExpired(block.timestamp);
         }
         else if(tknBacked.balanceOf(address(this)) < amount)
         {
-            revert RCN20InsufficientBalance(amount);
+            revert RCN40InsufficientBalance(amount);
             
         }
 
@@ -250,18 +250,18 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     {
         if(amount <= 0) 
         {
-            revert RCN20Amount(amount);
+            revert RCN40Amount(amount);
         }
 
         if(tknBacked.allowance(msg.sender, address(this)) < amount)
         {
-            revert RCN20Approve(false);
+            revert RCN40Approve(false);
         }
 
 
         if(address(tknBacked) == address(0))
         {
-            revert RCN20AddressZero(address(0));
+            revert RCN40AddressZero(address(0));
         }
 
         (bool success) = tknBacked.
@@ -281,13 +281,13 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     external 
     onlyAdmin 
     {
-        if(amount <= 0) revert RCN20Amount(amount);
+        if(amount <= 0) revert RCN40Amount(amount);
 
         if(address(tknBacked) == address(0)){
-            revert RCN20AddressZero(address(0));
+            revert RCN40AddressZero(address(0));
         }
 
-        if(tknBacked.balanceOf(address(this)) < amount) revert RCN20InsufficientBalance(amount);
+        if(tknBacked.balanceOf(address(this)) < amount) revert RCN40InsufficientBalance(amount);
 
         (bool success) = tknBacked.transfer(owner, amount);
 
@@ -295,6 +295,14 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
           reserve[IERC20(tknBacked)] -= amount;
           emit Withdraw(msg.sender, amount, block.timestamp);
         }                                                                                                                                        
+    }
+
+
+    function variableFee(uint8 _fee)
+    external
+    onlyOwner
+    {
+        monthlyFee = _fee;
     }
 
 
@@ -317,7 +325,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     external 
     onlyOwner 
     {
-        if(address(_admin) == address(0)) revert RCN20AddressZero(_admin);
+        if(address(_admin) == address(0)) revert RCN40AddressZero(_admin);
 
         _admins[_admin] = true;
 
@@ -332,7 +340,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     }
 
 
-      function isContract(address _account) 
+    function isContract(address _account) 
     internal
     view
     returns(bool)
@@ -350,7 +358,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     {
         if(isContract(msg.sender))
         {
-            require(ICanConnectRCN20(msg.sender).canPayHolders(), 
+            require(ICanConnectRCN40(msg.sender).canPayHolders(), 
             "this contract not support interface"
             );
         }
@@ -361,7 +369,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     {
         if(isContract(msg.sender))
         {
-            require(ICanConnectRCN20(msg.sender).canFarmHolders(), 
+            require(ICanConnectRCN40(msg.sender).canFarmHolders(), 
             "this contract not support interface"
             );
         }
@@ -372,7 +380,7 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
     {
         if(isContract(msg.sender))
         {
-            require(ICanConnectRCN20(msg.sender).canRemoveFarm(), 
+            require(ICanConnectRCN40(msg.sender).canRemoveFarm(), 
             "this contract not support interface"
             );
         }
@@ -396,6 +404,4 @@ contract RCN20 is IRCN20Errors, ReentrancyGuard{
         require(isPause == false, "This protocol has not yet started");
         _;
     }
-
-
 }

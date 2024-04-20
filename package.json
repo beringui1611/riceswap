@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@chainlink/contracts-ccip": "^1.4.0",
     "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.4.5",
     "harhdat": "^1.0.1"
