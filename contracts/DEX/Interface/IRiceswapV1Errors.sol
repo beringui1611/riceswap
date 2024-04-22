@@ -18,4 +18,6 @@ interface IRiceswapV1Errors {
 
     error IRiceswapInsufficientFarming(uint256 _amount);
 
+    error IRiceswapLiquidityInsufficient(uint256 _liquidity);
+
 }

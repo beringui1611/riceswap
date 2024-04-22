@@ -8,7 +8,7 @@ contract Math {
 
     function calcTime(
         uint256 _timeLock
-        ) internal virtual returns(uint256)
+        )internal virtual returns(uint256)
         {
             uint256 timeInSeconds = block.timestamp - _timeLock;
             uint256 timeInMonth = timeInSeconds / (month);
@@ -36,6 +36,15 @@ contract Math {
             uint256 txFee = ((_monthAmount * _dexFee) / 100);
 
             return txFee;
+        }
+
+    function calcValidator(
+        uint256 _txMonth
+        ) internal virtual returns(uint256) 
+        {
+            uint256 txValidator = ((_txMonth * 10) / 100);
+
+            return txValidator;
         }
 
     

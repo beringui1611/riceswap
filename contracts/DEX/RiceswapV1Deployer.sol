@@ -14,6 +14,7 @@ contract RiceswapV1Deployer {
         uint256 time;
         uint16 fee;
         uint64 index;
+        uint8 dexFee;
     }
 
     Parameters public parameters;
@@ -26,10 +27,11 @@ contract RiceswapV1Deployer {
         address admin,
         uint256 time,
         uint16 fee,
-        uint64 index
+        uint64 index,
+        uint8 dexFee
     ) internal returns(address pool) 
     {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index});
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index, dexFee: dexFee});
         bytes32 salt = keccak256(abi.encode(token0, token1, fee));
         RiceswapV1Pool newPool = new RiceswapV1Pool{salt: salt}(
             factory,
@@ -38,7 +40,8 @@ contract RiceswapV1Deployer {
             admin,
             time,
             fee,
-            index
+            index,
+            dexFee
         );
         pool = address(newPool);
         delete parameters;
