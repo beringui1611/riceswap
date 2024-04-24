@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./Riceswap20V1Pool.sol";
+import "./Riceswap40V1Pool.sol";
 
 contract RiceswapV1Deployer {
 
@@ -14,7 +15,6 @@ contract RiceswapV1Deployer {
         uint256 time;
         uint16 fee;
         uint64 index;
-        uint8 dexFee;
     }
 
     Parameters public parameters;
@@ -27,21 +27,44 @@ contract RiceswapV1Deployer {
         address admin,
         uint256 time,
         uint16 fee,
-        uint64 index,
-        uint8 dexFee
+        uint64 index
     ) internal returns(address pool) 
     {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index, dexFee: dexFee});
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index});
         bytes32 salt = keccak256(abi.encode(token0, token1, fee));
-        RiceswapV1Pool newPool = new RiceswapV1Pool{salt: salt}(
+        Riceswap20V1Pool newPool = new Riceswap20V1Pool{salt: salt}(
             factory,
             token0,
             token1,
             admin,
             time,
             fee,
-            index,
-            dexFee
+            index
+        );
+        pool = address(newPool);
+        delete parameters;
+    }
+
+    function deploy40(
+        address factory,
+        address token0,
+        address token1,
+        address admin,
+        uint256 time,
+        uint16 fee,
+        uint64 index
+    ) internal returns(address pool) 
+    {
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index});
+        bytes32 salt = keccak256(abi.encode(token0, token1, fee));
+        Riceswap40V1Pool newPool = new Riceswap40V1Pool{salt: salt}(
+            factory,
+            token0,
+            token1,
+            admin,
+            time,
+            fee,
+            index
         );
         pool = address(newPool);
         delete parameters;

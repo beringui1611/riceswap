@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
 contract Math {
 
-    uint256 month = 30 *24 *60 *60;
+   uint256 month = 30 *24 *60 *60;
 
     function calcTime(
         uint256 _timeLock
-        )internal virtual returns(uint256)
+        )internal view returns(uint256)
         {
             uint256 timeInSeconds = block.timestamp - _timeLock;
             uint256 timeInMonth = timeInSeconds / (month);
@@ -21,7 +20,7 @@ contract Math {
         uint256 _amount,
         uint256 _fee, 
         uint64 _index, 
-        uint256 _total) internal virtual returns(uint256)
+        uint256 _total) internal pure returns(uint256)
         {
             uint256 txMonth = ((_amount * _fee) / _index) * _total;
 
@@ -31,7 +30,7 @@ contract Math {
     function calcFee(
         uint256 _monthAmount, 
         uint256 _dexFee) 
-        internal virtual returns(uint256)
+        internal pure returns(uint256)
         {
             uint256 txFee = ((_monthAmount * _dexFee) / 100);
 
@@ -40,7 +39,7 @@ contract Math {
 
     function calcValidator(
         uint256 _txMonth
-        ) internal virtual returns(uint256) 
+        ) internal pure returns(uint256) 
         {
             uint256 txValidator = ((_txMonth * 10) / 100);
 

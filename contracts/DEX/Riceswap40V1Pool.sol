@@ -7,8 +7,8 @@ import "./Interface/IRiceswapV1Errors.sol";
 import "./libraries/Math.sol";
 import "hardhat/console.sol";
 
-contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
-    
+contract Riceswap40V1Pool is  IRiceswapV1Errors, SafeTransfer, Math {
+   
     address public immutable token0;
 
     address public immutable token1;
@@ -17,9 +17,9 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
     uint256 public immutable timer;
 
-    uint16 public immutable fee;
+    uint16 public fee;
 
-    uint64 public immutable index;
+    uint64 public index;
 
     address public immutable factory;
 
@@ -84,24 +84,24 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     function payholders() 
     external
         {
-        uint256 amount = farming[msg.sender];
+            uint256 amount = farming[msg.sender];
 
-        if(amount <= 0) revert IRiceswapInsufficientFarming(amount);
-        if(block.timestamp <= timeLock[msg.sender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
+            if(amount <= 0) revert IRiceswapInsufficientFarming(amount);
+            if(block.timestamp <= timeLock[msg.sender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
 
-        (uint256 totalAmount) = calcTime(timeLock[msg.sender]);
-        (uint256 txMonth) = calcPayment(amount, fee, index, totalAmount);
+            (uint256 totalAmount) = calcTime(timeLock[msg.sender]);
+            (uint256 txMonth) = calcPayment(amount, fee, index, totalAmount);
 
-        (uint256 txFee) = calcFee(txMonth, updateFee());
+            (uint256 txFee) = calcFee(txMonth, updateFee());
 
-        if(liquidity[address(this)] < txMonth) revert IRiceswapLiquidityInsufficient(txMonth);
+            if(liquidity[address(this)] < txMonth) revert IRiceswapLiquidityInsufficient(txMonth);
 
-        timeLock[msg.sender] = block.timestamp;
-        liquidity[address(this)] -= txMonth;
+            timeLock[msg.sender] = block.timestamp;
+            liquidity[address(this)] -= txMonth;
       
-        safeTransferPayment(token1, txMonth - txFee, txFee, admin);
+            safeTransferPayment(token1, txMonth - txFee, txFee, admin);
 
-        emit PayHolder(msg.sender, txMonth, block.timestamp);
+            emit PayHolder(msg.sender, txMonth, block.timestamp);
         }
 
     function validator(
@@ -147,5 +147,26 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
         {
             return IRiceswapV1Factory(factory).getFee();
         }
+
+    function upgradeableFee(
+        uint16 _newFee) 
+        external 
+        {
+            require(msg.sender == admin, "A");
+            require(_newFee > 0, "0");
+
+            fee = _newFee;
+        }
+
+    function upgradeableIndex(
+        uint64 _newIndex
+        ) external 
+        {
+            require(msg.sender == admin, "A");
+            require(_newIndex > 0, "0");
+
+            index = _newIndex;
+        }
+
 
 }
