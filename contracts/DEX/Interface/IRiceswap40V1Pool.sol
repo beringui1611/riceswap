@@ -14,13 +14,13 @@ interface IRiceswap40V1Pool {
 
     event Deposit(address indexed _from, address indexed _to, uint256 _amount);
 
-    function farm(uint256 _amount) external;
+    function farm(address _msgSender, uint256 _amount) external;
 
-    function removeFarm(uint256 _amount) external;
+    function removeFarm(address _msgSender, uint256 _amount) external;
 
-    function payholders() external;
+    function payholders(address _msgSender) external;
 
-    function validator(address _from) external;
+    function validator(address _from, address _msgSender) external;
 
     function deposit(uint256 _amount) external;
 

@@ -55,57 +55,61 @@ contract Riceswap40V1Pool is  IRiceswapV1Errors, SafeTransfer, Math {
 
 
     function farm(
-        uint256 _amount
+        uint256 _amount,
+        address _msgSender
         ) external 
         {
 
           safeTransferFarm(token0, _amount);
-          timeLock[msg.sender] = block.timestamp;
-          farming[msg.sender] += _amount;
+          timeLock[_msgSender] = block.timestamp;
+          farming[_msgSender] += _amount;
 
-          emit Farm(msg.sender, _amount, block.timestamp);
+          emit Farm(_msgSender, _amount, block.timestamp);
         }
 
     function removeFarm(
-        uint256 _amount 
+        uint256 _amount,
+        address _msgSender
         ) external
         {
-            if(block.timestamp < timeLock[msg.sender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
-            if(farming[msg.sender] < _amount) revert IRiceswapInsufficientFarming(_amount);
+            if(block.timestamp < timeLock[_msgSender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
+            if(farming[_msgSender] < _amount) revert IRiceswapInsufficientFarming(_amount);
 
-            timeLock[msg.sender] = block.timestamp;
-            farming[msg.sender] -= _amount;
+            timeLock[_msgSender] = block.timestamp;
+            farming[_msgSender] -= _amount;
 
-            safeTransferRemoveFarm(token0, _amount);
+            safeTransferRemoveFarm(token0, _amount, _msgSender);
 
-            emit RemoveFarm(msg.sender, _amount, block.timestamp);
+            emit RemoveFarm(_msgSender, _amount, block.timestamp);
         }
 
-    function payholders() 
-    external
+    function payholders(
+        address _msgSender
+        ) external
         {
-            uint256 amount = farming[msg.sender];
+            uint256 amount = farming[_msgSender];
 
             if(amount <= 0) revert IRiceswapInsufficientFarming(amount);
-            if(block.timestamp <= timeLock[msg.sender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
+            if(block.timestamp <= timeLock[_msgSender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
 
-            (uint256 totalAmount) = calcTime(timeLock[msg.sender]);
+            (uint256 totalAmount) = calcTime(timeLock[_msgSender]);
             (uint256 txMonth) = calcPayment(amount, fee, index, totalAmount);
 
             (uint256 txFee) = calcFee(txMonth, updateFee());
 
             if(liquidity[address(this)] < txMonth) revert IRiceswapLiquidityInsufficient(txMonth);
 
-            timeLock[msg.sender] = block.timestamp;
+            timeLock[_msgSender] = block.timestamp;
             liquidity[address(this)] -= txMonth;
       
-            safeTransferPayment(token1, txMonth - txFee, txFee, admin);
+            safeTransferPayment(token1, txMonth - txFee, txFee, admin, _msgSender);
 
-            emit PayHolder(msg.sender, txMonth, block.timestamp);
+            emit PayHolder(_msgSender, txMonth, block.timestamp);
         }
 
     function validator(
-        address _from
+        address _from,
+        address _msgSender
         ) external 
         {
           uint256 amount = farming[_from];
@@ -126,9 +130,9 @@ contract Riceswap40V1Pool is  IRiceswapV1Errors, SafeTransfer, Math {
           timeLock[_from] = block.timestamp;
           liquidity[address(this)] -= txMonth;
 
-          safeTransferValidator(token1, _from, txMonth - txFee - txValidator, txFee, txValidator, admin);
+          safeTransferValidator(token1, _from, txMonth - txFee - txValidator, txFee, txValidator, admin, _msgSender);
 
-          emit Validator(_from, txMonth, msg.sender, txValidator);
+          emit Validator(_from, txMonth, _msgSender, txValidator);
         }
 
     function deposit(

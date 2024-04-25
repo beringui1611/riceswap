@@ -78,7 +78,7 @@ function safeTransferPayment(
         uint256 _monthFee, 
         uint256 _dexFee, 
         uint256 _validatorFee,
-        address _dexWallet, 
+        address _dexWallet,
         address _msgSender
         ) internal virtual returns(bool, bool, bool)
         {

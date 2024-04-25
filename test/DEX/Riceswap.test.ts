@@ -27,9 +27,12 @@ import { ZeroAddress } from "ethers";
        
        const Pool40 = await ethers.getContractFactory("Riceswap40V1Pool");
        const pool40 = await Pool40.deploy(riceswap.target, ricecoin.target, usdt.target, account2.address, TIME, 1n, 100n)
+
+       const RiceswapRouter = await ethers.getContractFactory("RiceswapV1Router");
+       const riceswapRouter = await RiceswapRouter.deploy();
          
  
-       return {riceswap, ricecoin, pool, usdt, owner, otherAccount, account2, account3, pool40};
+       return {riceswap, ricecoin, pool, usdt, owner, otherAccount, account2, account3, pool40, riceswapRouter};
      }
  
      describe("Deployment", function () {
@@ -160,7 +163,7 @@ import { ZeroAddress } from "ethers";
         await IOther.approve(pool.target, AMOUNT);
 
         const IOtherPool = pool.connect(otherAccount);
-        const tx = await IOtherPool.farm(AMOUNT);
+        const tx = await IOtherPool.farm(otherAccount, AMOUNT);
         const txUsed = await tx.wait();
         console.log(`farm gas used: ${txUsed?.gasUsed}`)
 
@@ -172,7 +175,7 @@ import { ZeroAddress } from "ethers";
       it("Should farm balance < amount (POOL)", async function () {
         const {pool, otherAccount} = await loadFixture(deployFixture);
         const IOtherPool = pool.connect(otherAccount);
-        await expect(IOtherPool.farm(AMOUNT)).to.be.revertedWithCustomError(pool, "RiceswapBalanceInsufficient");
+        await expect(IOtherPool.farm(otherAccount, AMOUNT)).to.be.revertedWithCustomError(pool, "RiceswapBalanceInsufficient");
         
       });
 
@@ -184,7 +187,7 @@ import { ZeroAddress } from "ethers";
         await IOther.approve(pool.target, 1000n);
 
         const IOtherPool = pool.connect(otherAccount);
-        await expect(IOtherPool.farm(AMOUNT)).to.be.revertedWithCustomError(pool, "RiceswapAllowanceInsufficient");
+        await expect(IOtherPool.farm(otherAccount, AMOUNT)).to.be.revertedWithCustomError(pool, "RiceswapAllowanceInsufficient");
        
       });
 
@@ -192,7 +195,7 @@ import { ZeroAddress } from "ethers";
         const {pool, otherAccount} = await loadFixture(deployFixture);
       
         const IOtherPool = pool.connect(otherAccount);
-        await expect(IOtherPool.farm(0n)).to.be.revertedWithCustomError(pool, "RiceswapAmountInsufficient");
+        await expect(IOtherPool.farm(otherAccount, 0n)).to.be.revertedWithCustomError(pool, "RiceswapAmountInsufficient");
        
       });
 
@@ -204,11 +207,11 @@ import { ZeroAddress } from "ethers";
         await IOther.approve(pool.target, AMOUNT);
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
         
         await time.increase(30 *24 *60 *60);
         
-        const tx = await IOtherPool.removeFarm(AMOUNT);
+        const tx = await IOtherPool.removeFarm(otherAccount, AMOUNT);
         const txUsed = await tx.wait();
         console.log(`removefarm gas used: ${txUsed?.gasUsed}`)
 
@@ -225,11 +228,11 @@ import { ZeroAddress } from "ethers";
         await IOther.approve(pool.target, AMOUNT);
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
 
         await time.increase(29 *24 *60 *60);
         
-        await expect(IOtherPool.removeFarm(AMOUNT)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
+        await expect(IOtherPool.removeFarm(otherAccount, AMOUNT)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
            
       });
 
@@ -243,7 +246,7 @@ import { ZeroAddress } from "ethers";
 
         await time.increase(39 *24 *60 *60);
         
-        await expect(IOtherPool.removeFarm(AMOUNT)).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
+        await expect(IOtherPool.removeFarm(otherAccount, AMOUNT)).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
            
       });
 
@@ -257,7 +260,7 @@ import { ZeroAddress } from "ethers";
 
         await time.increase(39 *24 *60 *60);
         
-        await expect(IOtherPool.removeFarm(0)).to.be.revertedWithCustomError(pool, "RiceswapAmountInsufficient");
+        await expect(IOtherPool.removeFarm(otherAccount, 0)).to.be.revertedWithCustomError(pool, "RiceswapAmountInsufficient");
            
       });
 
@@ -273,11 +276,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(30 *24 *60 *60);
 
-        const tx = await IOtherPool.payholders();
+        const tx = await IOtherPool.payholders(otherAccount.address);
         const txUsed = await tx.wait();
         console.log(`payholders gas used: ${txUsed?.gasUsed}`)
        
@@ -297,11 +300,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(60 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
        
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n *2n);
         expect(await usdt.balanceOf(account2)).to.equal(1000000000000000000n);
@@ -323,7 +326,7 @@ import { ZeroAddress } from "ethers";
        
         await time.increase(30 *24 *60 *60);
 
-        await expect(IOtherPool.payholders()).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
+        await expect(IOtherPool.payholders(otherAccount)).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
        
       });
 
@@ -338,11 +341,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(29 *24 *60 *60);
 
-        await expect(IOtherPool.payholders()).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
+        await expect(IOtherPool.payholders(otherAccount)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
        
       });
 
@@ -354,11 +357,11 @@ import { ZeroAddress } from "ethers";
       
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(30 *24 *60 *60);
 
-        await expect(IOtherPool.payholders()).to.be.revertedWithCustomError(pool, "IRiceswapLiquidityInsufficient");
+        await expect(IOtherPool.payholders(otherAccount)).to.be.revertedWithCustomError(pool, "IRiceswapLiquidityInsufficient");
       });
       
       it("Should validator ", async function () {
@@ -372,12 +375,12 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(30 *24 *60 *60);     
         
         const IOtherValidator = pool.connect(account3);
-        const tx = await IOtherValidator.validator(otherAccount.address);
+        const tx = await IOtherValidator.validator(otherAccount.address, account3);
         const txUsed = await tx.wait();
         console.log(`validator gas used: ${txUsed?.gasUsed}`)
 
@@ -401,7 +404,7 @@ import { ZeroAddress } from "ethers";
         await time.increase(30 *24 *60 *60);     
         
         const IOtherValidator = pool.connect(account3);
-        await expect(IOtherValidator.validator(otherAccount.address)).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
+        await expect(IOtherValidator.validator(otherAccount.address, account3)).to.be.revertedWithCustomError(pool, "IRiceswapInsufficientFarming");
       });
 
       it("Should validator time < 30days", async function () {
@@ -415,12 +418,12 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
 
         await time.increase(29 *24 *60 *60);     
         
         const IOtherValidator = pool.connect(account3);
-        await expect(IOtherValidator.validator(otherAccount.address)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
+        await expect(IOtherValidator.validator(otherAccount.address, account3)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
       });
 
       it("Should validator time liquidity < txMonth", async function () {
@@ -431,12 +434,12 @@ import { ZeroAddress } from "ethers";
     
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
 
         await time.increase(30 *24 *60 *60);     
         
         const IOtherValidator = pool.connect(account3);
-        await expect(IOtherValidator.validator(otherAccount.address)).to.be.revertedWithCustomError(pool, "IRiceswapLiquidityInsufficient");
+        await expect(IOtherValidator.validator(otherAccount.address, account3)).to.be.revertedWithCustomError(pool, "IRiceswapLiquidityInsufficient");
       });
 
       it("Should validator > sequence time not expired ", async function () {
@@ -450,14 +453,14 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(otherAccount, AMOUNT);
        
         await time.increase(30 *24 *60 *60);     
         
         const IOtherValidator = pool.connect(account3);
-        await IOtherValidator.validator(otherAccount.address);
+        await IOtherValidator.validator(otherAccount.address, account3);
 
-        await expect(IOtherValidator.validator(otherAccount)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
+        await expect(IOtherValidator.validator(otherAccount, account3)).to.be.revertedWithCustomError(pool, "IRiceswapTimeNotExpired");
 
       });
 
@@ -505,11 +508,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -520,7 +523,7 @@ import { ZeroAddress } from "ethers";
 
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(28500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(1500000000000000000n);
@@ -538,11 +541,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -553,7 +556,7 @@ import { ZeroAddress } from "ethers";
 
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(28500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(1500000000000000000n);
@@ -571,11 +574,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -597,11 +600,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -623,11 +626,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -638,7 +641,7 @@ import { ZeroAddress } from "ethers";
 
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(10450000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(550000000000000000n);
@@ -656,11 +659,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -682,11 +685,11 @@ import { ZeroAddress } from "ethers";
         
 
         const IOtherPool = pool40.connect(otherAccount);
-        await IOtherPool.farm(AMOUNT);
+        await IOtherPool.farm(AMOUNT, otherAccount);
        
         await time.increase(30 *24 *60 *60);
 
-        await IOtherPool.payholders();
+        await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
         expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
@@ -694,6 +697,22 @@ import { ZeroAddress } from "ethers";
         const IAccount = pool40.connect(account2);
 
         await expect(IAccount.upgradeableIndex(0)).to.revertedWith("0")
+
+      });
+
+
+      it("Should riceswap router", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin } = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherPool = riceswapRouter.connect(otherAccount);
+          await IOtherPool.callbackFarm(pool.target, AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
 
       });
      });

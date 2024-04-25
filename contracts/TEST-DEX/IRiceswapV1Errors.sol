@@ -20,6 +20,4 @@ interface IRiceswapV1Errors {
 
     error IRiceswapLiquidityInsufficient(uint256 _liquidity);
 
-    error IRiceswapAmount(uint256 _amount);
-
 }

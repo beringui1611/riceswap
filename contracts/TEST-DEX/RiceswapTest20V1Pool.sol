@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./Interface/IRiceswapV1Factory.sol";
-import "./libraries/SafeTransfers.sol";
-import "./Interface/IRiceswapV1Errors.sol";
-import "./libraries/Math.sol";
+import "./SafeTransfers.sol";
+import "./IRiceswapV1Errors.sol";
+import "./Math.sol";
 import "hardhat/console.sol";
 
-contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
+contract RiceswapTest20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     
     address public immutable token0;
 
@@ -69,10 +68,10 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
     function removeFarm(
         address _msgSender,
-        uint256 _amount 
+        uint256 _amount
         ) external
         {
-            if(block.timestamp < timeLock[_msgSender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
+            if(block.timestamp < timeLock[msg.sender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
             if(farming[_msgSender] < _amount) revert IRiceswapInsufficientFarming(_amount);
 
             timeLock[_msgSender] = block.timestamp;
@@ -83,9 +82,8 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
             emit RemoveFarm(_msgSender, _amount, block.timestamp);
         }
 
-    function payholders(
-        address _msgSender
-        ) external
+    function payholders(address _msgSender) 
+    external
         {
         uint256 amount = farming[_msgSender];
 
@@ -95,7 +93,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
         (uint256 totalAmount) = calcTime(timeLock[_msgSender]);
         (uint256 txMonth) = calcPayment(amount, fee, index, totalAmount);
 
-        (uint256 txFee) = calcFee(txMonth, updateFee());
+        (uint256 txFee) = calcFee(txMonth, 5);
 
         if(liquidity[address(this)] < txMonth) revert IRiceswapLiquidityInsufficient(txMonth);
 
@@ -121,7 +119,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
           (uint256 txMonth) = calcPayment(amount, fee, index, totalAmount);
 
-          (uint256 txFee) = calcFee(txMonth, updateFee());
+          (uint256 txFee) = calcFee(txMonth, 5);
 
           (uint256 txValidator) = calcValidator(txMonth);
 
@@ -146,10 +144,10 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
                 
         }
 
-    function updateFee() 
-        internal virtual view returns(uint256)
-        {
-            return IRiceswapV1Factory(factory).getFee();
-        }
+    // function updateFee() 
+    //     internal virtual view returns(uint256)
+    //     {
+    //         return IRiceswapV1Factory(factory).getFee();
+    //     }
 
 }

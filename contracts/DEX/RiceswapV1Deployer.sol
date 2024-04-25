@@ -21,7 +21,7 @@ contract RiceswapV1Deployer {
 
 
     function deploy(
-        address factory,
+        address factory, //struct
         address token0,
         address token1,
         address admin,
