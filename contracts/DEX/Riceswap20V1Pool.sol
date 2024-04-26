@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./Interface/IRiceswapV1Factory.sol";
+import "./interfaces/IRiceswapV1Factory.sol";
 import "./libraries/SafeTransfers.sol";
-import "./Interface/IRiceswapV1Errors.sol";
+import "./interfaces/IRiceswapV1Errors.sol";
 import "./libraries/Math.sol";
-import "hardhat/console.sol";
 
 contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./Interface/IRiceswapV1Errors.sol";
-import "./Interface/IRiceswap20V1Pool.sol";
+import "./interfaces/IRiceswapV1Errors.sol";
+import "./interfaces/IRiceswap20V1Pool.sol";
+import "./interfaces/IRiceswap40V1Pool.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
@@ -15,7 +16,7 @@ contract RiceswapV1Router is IRiceswapV1Errors{
             IRiceswap20V1Pool sspool = IRiceswap20V1Pool(pool);
             IERC20 tkn = IERC20(sspool.token0());
 
-            if(pool == address(0)) revert IRiceswapAddressZero(pool);
+            if(address(pool) == address(0)) revert IRiceswapAddressZero(pool);
             if(amount <= 0) revert IRiceswapAmount(amount);
 
             tkn.transferFrom(msg.sender, address(this), amount);
@@ -32,7 +33,7 @@ contract RiceswapV1Router is IRiceswapV1Errors{
          external returns(bool) {
             IRiceswap20V1Pool sspool = IRiceswap20V1Pool(pool);
 
-            if(pool == address(0)) revert IRiceswapAddressZero(pool);
+           if(address(pool) == address(0)) revert IRiceswapAddressZero(pool);
             if(amount <= 0) revert IRiceswapAmount(amount);
 
             sspool.removeFarm(msg.sender, amount);
@@ -45,7 +46,7 @@ contract RiceswapV1Router is IRiceswapV1Errors{
          external returns(bool) {
             IRiceswap20V1Pool sspool = IRiceswap20V1Pool(pool);
 
-            if(pool == address(0)) revert IRiceswapAddressZero(pool);
+           if(address(pool) == address(0)) revert IRiceswapAddressZero(pool);
 
             sspool.payholders(msg.sender);
 
@@ -58,10 +59,28 @@ contract RiceswapV1Router is IRiceswapV1Errors{
          external returns(bool) {
             IRiceswap20V1Pool sspool = IRiceswap20V1Pool(pool);
 
-            if(pool == address(0)) revert IRiceswapAddressZero(pool);
-            if(from == address(0)) revert IRiceswapAddressZero(from);
+           if(address(pool) == address(0)) revert IRiceswapAddressZero(pool);
+           if(from == address(0)) revert IRiceswapAddressZero(from);
 
             sspool.validator(from, msg.sender);
+
+            return true;
+    }
+
+    function callbackDeposit(
+        address pool, 
+        uint256 amount) 
+          external returns(bool) {
+            IRiceswap20V1Pool sspool = IRiceswap20V1Pool(pool);
+            IERC20 tkn = IERC20(sspool.token1());
+
+            if(address(pool) == address(0)) revert IRiceswapAddressZero(pool);
+            if(amount <= 0) revert IRiceswapAmount(amount);
+
+            tkn.transferFrom(msg.sender, address(this), amount);
+            tkn.approve(pool, amount);
+
+            sspool.deposit(amount);
 
             return true;
     }

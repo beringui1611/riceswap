@@ -22,7 +22,11 @@ interface IRiceswap20V1Pool {
 
     function validator(address _from, address _msgSender) external;
 
+    function deposit(uint256 _amount) external;
+
     function token0() external view returns(address);
+
+    function token1() external view returns(address);
 
 
 }

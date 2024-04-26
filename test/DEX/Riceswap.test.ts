@@ -155,7 +155,7 @@ import { ZeroAddress } from "ethers";
         await expect(IOther.setFee(10n)).to.be.revertedWith("OWNER");
       });
 
-
+// ----------------------------------------- POOL ----------------------------------------------------------
       it("Should farm (POOL)", async function () {
         const {pool, ricecoin, otherAccount} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
@@ -486,6 +486,8 @@ import { ZeroAddress } from "ethers";
         
       });
 
+      // ---------------------------------- RCN40 -----------------------------------------------------
+
       it("Should createPool RCN40 (variable fee)", async function () {
         const { riceswap, ricecoin, usdt} = await loadFixture(deployFixture);
         const tx =  await riceswap.createPool40(ricecoin.target, usdt.target, 1n, 100n)
@@ -700,8 +702,11 @@ import { ZeroAddress } from "ethers";
 
       });
 
+      // ------------------------------------------ END LINES -------------------------------------------------------
+      
+      // ------------------------------------------ ROUTERS ---------------------------------------------------------
 
-      it("Should riceswap router", async function () {
+      it("Should riceswap router farm", async function () {
         const {pool, riceswapRouter, otherAccount, ricecoin } = await loadFixture(deployFixture);
           
           await ricecoin.transfer(otherAccount.address, AMOUNT);
@@ -709,12 +714,202 @@ import { ZeroAddress } from "ethers";
           await IOtherApprove.approve(riceswapRouter, AMOUNT);
 
           const IOtherPool = riceswapRouter.connect(otherAccount);
-          await IOtherPool.callbackFarm(pool.target, AMOUNT);
+          const tx = await IOtherPool.callbackFarm(pool.target, AMOUNT);
+          const txUsed = await tx.wait();
+          console.log(`router farm: ${txUsed?.gasUsed}`);
 
           expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
           expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
 
       });
+
+      it("Should riceswap router removefarm", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin } = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          const tx = await IOtherRouter.callbackRemoveFarm(pool.target, AMOUNT);
+          const txUsed = await tx.wait();
+          console.log(`router removefarm: ${txUsed?.gasUsed}`);
+
+          expect(await ricecoin.balanceOf(otherAccount)).to.equal(AMOUNT);
+          expect(await pool.farming(otherAccount)).to.equal(0n);
+
+      });
+
+
+      it("Should riceswap router payholders", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2} = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          await usdt.approve(pool, AMOUNT);
+          await pool.deposit(AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          const tx = await IOtherRouter.callbackPayholders(pool.target);
+          const txUsed = await tx.wait();
+          console.log(`router payholders: ${txUsed?.gasUsed}`);
+
+          expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
+          expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+         
+      });
+
+      it("Should riceswap router validators", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2, account3} = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          await usdt.approve(pool, AMOUNT);
+          await pool.deposit(AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          const IOtherValidator = riceswapRouter.connect(account3);
+
+          const tx = await IOtherValidator.callbackValidator(pool.target, otherAccount);
+          const txUsed = await tx.wait();
+          console.log(`router validator: ${txUsed?.gasUsed}`);
+
+          expect(await usdt.balanceOf(otherAccount)).to.equal(8500000000000000000n);
+          expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+          expect(await usdt.balanceOf(account3)).to.equal(1000000000000000000n);
+         
+      });
+
+      it("Should riceswap router deposit", async function () {
+        const {pool, riceswapRouter, otherAccount, usdt} = await loadFixture(deployFixture);
+          
+          await usdt.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = usdt.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          const tx = await IOtherRouter.callbackDeposit(pool, AMOUNT);
+          const txUsed = await tx.wait();
+          console.log(`router deposit: ${txUsed?.gasUsed}`)
+
+          expect(await usdt.balanceOf(pool.target)).to.equal(AMOUNT);
+          expect(await pool.liquidity(pool.target)).to.equal(AMOUNT);
+      });
+
+      // --------------------------------------- ERRORS ROUTER ------------------------------------------------------
+
+      it("Should riceswap router farm error ", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin } = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherPool = riceswapRouter.connect(otherAccount);
+          await expect(IOtherPool.callbackFarm(pool, 0)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAmount");
+      });
+
+      it("Should riceswap router removefarm error", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin } = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          await expect(IOtherRouter.callbackRemoveFarm(pool, 0)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAmount");
+
+      });
+
+      it("Should riceswap router payholders error", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2} = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          await usdt.approve(pool, AMOUNT);
+          await pool.deposit(AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          await expect(IOtherRouter.callbackPayholders(ZeroAddress)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAddressZero");
+      });
+
+
+      it("Should riceswap router validators errors", async function () {
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2, account3} = await loadFixture(deployFixture);
+          
+          await ricecoin.transfer(otherAccount.address, AMOUNT);
+          const IOtherApprove = ricecoin.connect(otherAccount);
+          await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+          const IOtherRouter = riceswapRouter.connect(otherAccount);
+          await IOtherRouter.callbackFarm(pool.target, AMOUNT);
+
+          await usdt.approve(pool, AMOUNT);
+          await pool.deposit(AMOUNT);
+
+          expect(await pool.farming(otherAccount.address)).to.equal(AMOUNT);
+          expect(await ricecoin.balanceOf(pool.target)).to.equal(AMOUNT);
+
+          await time.increase(TIME);
+
+          const IOtherValidator = riceswapRouter.connect(account3);
+
+          await expect(IOtherValidator.callbackValidator(ZeroAddress, otherAccount)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAddressZero");
+          await expect(IOtherValidator.callbackValidator(pool.target, ZeroAddress)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAddressZero");
+      });
+      
+      it("Should riceswap router deposit errors", async function () {
+        const {pool, riceswapRouter, otherAccount, usdt} = await loadFixture(deployFixture);
+              
+        await usdt.transfer(otherAccount.address, AMOUNT);
+        const IOtherApprove = usdt.connect(otherAccount);
+        await IOtherApprove.approve(riceswapRouter, AMOUNT);
+
+        const IOtherRouter = riceswapRouter.connect(otherAccount);
+        await expect(IOtherRouter.callbackDeposit(pool, 0n)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAmount");          
+      });
+
      });
-   });
+   }); 
  

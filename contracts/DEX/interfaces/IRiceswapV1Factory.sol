@@ -22,5 +22,7 @@ interface IRiceswapV1Factory {
         uint64 index
     )
     external returns(address pool);
+
+    function setFee(uint8 _fee) external;
     
 }

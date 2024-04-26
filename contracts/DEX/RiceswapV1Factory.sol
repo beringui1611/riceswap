@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.24;
 
-import "./Interface/IRiceswapV1Errors.sol";
+import "./interfaces/IRiceswapV1Errors.sol";
 import "./RiceswapV1Deployer.sol";
-import "hardhat/console.sol";
 
 contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
 
@@ -46,8 +45,6 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
 
         emit PoolCreated(token0, token1, fee, pool);
 
-        console.log("contract", pool);
-
         return pool;   
     }
 
@@ -71,8 +68,6 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         _token0[token0] = token0;
 
         emit PoolCreated(token0, token1, fee, pool);
-
-        console.log("contract", pool);
 
         return pool;   
     }
