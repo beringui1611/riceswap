@@ -8,16 +8,18 @@ async function main() {
   // const riceCoin = await ethers.deployContract("RiceCoin");
   // await riceCoin.waitForDeployment();
 
-  const buyCrypto = await ethers.deployContract("DataConsumerV3");
-  await buyCrypto.waitForDeployment();
+  const Factory = await ethers.deployContract("RiceswapV1Factory");
+  await Factory.waitForDeployment();
 
-  // console.log(` coin ${riceCoin.target}`)
+  console.log(`factory hash ${Factory.target}`)
 
-  console.log(` coin ${buyCrypto.target}`)
+  const Router = await ethers.deployContract("RiceswapV1Router");
+  await Router.waitForDeployment();
 
-  // console.log(
-  //   `swap ${riceswap.target}`
-  // );
+  console.log(`router hash ${Router.target}`)
+
+
+  ;
 }
 
 // We recommend this pattern to be able to use async/await everywhere

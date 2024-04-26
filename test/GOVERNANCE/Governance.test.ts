@@ -5,6 +5,7 @@ import {
   import { expect } from "chai";
 import { ZeroAddress } from "ethers";
   import { ethers } from "hardhat";
+import { math } from "../../typechain-types/@openzeppelin/contracts/utils";
 
   describe("RiceCoin", function () {
    const TIME = 30 *24 *60 *60;
@@ -41,7 +42,29 @@ import { ZeroAddress } from "ethers";
          console.log(result);
        }); 
 
-       it("Should closeVote", async function () {
+       it("Should closeVote YES", async function () {
+        const {governance} = await loadFixture(deployFixture);
+        await governance.initProposal("CONTRATAR UM ADMINISTRADOR DE POOLS", "na minha opinião....");
+        const hash = await governance.proposalData(0);
+
+        for(let i =0; i < 3; i++){
+          await governance.vote(0, 0);
+        }
+        await time.increase(10 *24 *60 *60);
+        const res1 = await governance.getProposal()
+        console.log(res1);
+
+        await governance.closeVote(0);
+
+        const res = await governance.executeds(hash.hash)
+        console.log(res)
+
+        const res2 = await governance.getProposal()
+        console.log(res2);
+
+      }); 
+
+      it("Should closeVote NO", async function () {
         const {governance} = await loadFixture(deployFixture);
         await governance.initProposal("CONTRATAR UM ADMINISTRADOR DE POOLS", "na minha opinião....");
         const hash = await governance.proposalData(0);
@@ -50,11 +73,95 @@ import { ZeroAddress } from "ethers";
           await governance.vote(0, 1);
         }
         await time.increase(10 *24 *60 *60);
+        const res1 = await governance.getProposal()
+        console.log(res1);
+
         await governance.closeVote(0);
 
-        await governance.getProposal()
-        await governance.executeds(hash.hash)
+        const res = await governance.executeds(hash.hash)
+        console.log(res)
+
+      }); 
+
+      it("Should closeVote NULL", async function () {
+        const {governance} = await loadFixture(deployFixture);
+        await governance.initProposal("CONTRATAR UM ADMINISTRADOR DE POOLS", "na minha opinião....");
+        const hash = await governance.proposalData(0);
+
+        for(let i =0; i < 3; i++){
+          await governance.vote(0, 2);
+        }
+        await time.increase(10 *24 *60 *60);
+        const res1 = await governance.getProposal()
+        console.log(res1);
+
+        await governance.closeVote(0);
+
+        const res = await governance.executeds(hash.hash)
+        console.log(res +    'NULL')  
+        const res2 = await governance.getProposal()
+        console.log(res2 +   'NULL');
+
+      }); 
+
+      it("Should closeVote TIED", async function () {
+        const {governance} = await loadFixture(deployFixture);
+        await governance.initProposal("CONTRATAR UM ADMINISTRADOR DE POOLS", "na minha opinião....");
+        const hash = await governance.proposalData(0);
+
+        for(let i =0; i < 3; i++){
+          await governance.vote(0, 0);
+        }
+
+        for(let i =0; i < 3; i++){
+          await governance.vote(0, 1);
+        }
+
+        await time.increase(10 *24 *60 *60);
+        const res1 = await governance.getProposal()
+        console.log(res1);
+
+        await governance.closeVote(0);
+
+        const res = await governance.executeds(hash.hash)
+        console.log(res)  
+
+        const res2 = await governance.getProposal()
+        console.log(res2);
+
+
+      }); 
+
+
+      it("Should closeVote RANDOM VOTINGS", async function () {
+        const {governance} = await loadFixture(deployFixture);
+        await governance.initProposal("CONTRATAR UM ADMINISTRADOR DE POOLS", "na minha opinião....");
+        const hash = await governance.proposalData(0);
+
+        const YES = Math.floor(Math.random() * 100);
+        const NO = Math.floor(Math.random() * 100);
+        const NULL = Math.floor(Math.random() * 100);
+
+        for(let i =0; i < YES; i++){
+          await governance.vote(0, 0);
+        }
+
+        for(let i =0; i < NO; i++){
+          await governance.vote(0, 1);
+        }
+      
+        for(let i =0; i < NULL; i++){
+          await governance.vote(0, 2);
+        }
         
+        await time.increase(10 *24 *60 *60);
+        const res1 = await governance.getProposal()
+        console.log(res1);
+
+        await governance.closeVote(0);
+
+        const res = await governance.executeds(hash.hash)
+        console.log(res)  
 
       }); 
     });

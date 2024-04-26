@@ -8,13 +8,13 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
 
     address public owner;
     uint8 public dexFee;
-    uint256 timer = 30 *24 *60 *60;
+    uint256 timer = 30 *24 *60 *60; ///@dev Used to define the payment time for pools.
 
     
     mapping(address => address) public getPool;
     mapping(address => address) private _token0;
 
-    event PoolCreated(address indexed token0, address indexed token1, uint16 fee, address indexed pool);
+    event PoolCreated(address indexed token0, address indexed token1, uint16 fee, address indexed pool); 
     event OwnerChanged(address indexed newOwner, address indexed oldOwner);
     event NewFee(uint256 indexed _fee);
 
@@ -24,6 +24,12 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         dexFee = 5;
     }
 
+    /**
+     *@notice CreatePool -- This function creates only the RCN20. --
+     *@dev Responsible for creating the pool, this is where users will call 
+     in their smart contracts or through interfaces to create their pools.
+     @return pool It returns the address of your new pool.
+     */
 
     function createPool(
         address token0,
@@ -48,6 +54,12 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         return pool;   
     }
 
+    /**
+     *@notice CreatePool -- This function creates only the RCN40. --
+     *@dev Responsible for creating the pool, this is where users will call 
+     in their smart contracts or through interfaces to create their pools.
+     @return pool It returns the address of your new pool.
+     */
 
     function createPool40(
         address token0,
@@ -72,14 +84,14 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         return pool;   
     }
 
-
+    // @riceswap -- manager --
     function setOwner(address _owner) external {
         require(msg.sender == owner, "OWNER");
         owner = _owner;
         emit OwnerChanged(owner, _owner);
     }
 
-
+    // @riceswap -- fee --
     function setFee(uint8 _fee) external {
         require(msg.sender == owner, "OWNER");
         dexFee = _fee;
@@ -87,7 +99,7 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         emit NewFee(_fee);
     }
 
-    
+    ///@return dexFee This function returns the real-time rice rate for pools to instantiate and utilize, as defined in the pool. 
     function getFee() external view returns(uint256){
         return dexFee;
     }

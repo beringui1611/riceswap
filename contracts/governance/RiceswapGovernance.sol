@@ -47,6 +47,7 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
     ProposalData[] public proposalData;
     
     mapping(bytes32 => Executed) public executeds;
+    mapping(address => mapping(bytes32 => uint256)) votes;
 
 
     constructor(address _token0, uint64 _percent)
@@ -87,8 +88,8 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
         ProposalData storage proposal = proposalData[_id];
         
         if(block.timestamp >= proposal.createdAt + proposal.finished) revert();
-        //if(token.balanceOf(msg.sender) < 0) revert();
         if(_vote > 2) revert();
+        if(token.balanceOf(msg.sender) < 0) revert();
 
         if(_vote == uint8(Vote.YES)){
             proposal.counters.yes++;
@@ -132,5 +133,34 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
     function getProposal() external view returns(ProposalData[] memory){
         return proposalData;
     }
+
+    function power() internal virtual returns(uint256){
+        uint256 _power = token.balanceOf(msg.sender);
+        uint256 energy;
+
+        if(_power < 1000 ether){
+            energy = 0;
+        }
+        else if(_power > 1000 ether){
+            energy = 1000;
+              
+            uint256 x = _power / energy;
+
+                return x;        
+
+        }
+    }
+
+    function safeTransferVote(uint256 _vote, bytes32 _hash) internal virtual {
+        if(_vote <= 0) revert();
+
+        token.transferFrom(msg.sender, address(this), _vote);
+        votes[msg.sender][_hash] = _vote;
+
+    }
+
+    
+
+    
 
 }
