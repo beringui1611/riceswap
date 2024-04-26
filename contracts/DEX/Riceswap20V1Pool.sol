@@ -6,6 +6,8 @@ import "./libraries/SafeTransfers.sol";
 import "./interfaces/IRiceswapV1Errors.sol";
 import "./libraries/Math.sol";
 
+//corrigir falha de qualquer user chamar a função por você
+
 contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     
     address public immutable token0;
@@ -29,9 +31,10 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     event Deposit(address indexed _from, address indexed _to, uint256 _amount);
 
 
-    mapping(address => uint256) public farming;
-    mapping(address => uint256) public timeLock;
-    mapping(address => uint256) public liquidity;
+    mapping(address => uint256) public farming; ///@param Farming where addresses containing the amount of tokens invested will be saved.  
+    mapping(address => uint256) public timeLock; ///@param Timelock stores the address containing the lock-up time for each user.
+    mapping(address => uint256) public liquidity; ///@param Liquidity Here we store the liquidity information for this contract.
+    
 
     constructor(
         address _factory,
@@ -52,7 +55,12 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
         index = _index;
     }
 
-
+    /**
+     * @param _msgSender --> Provide your wallet address to save in the farming pool, where you will receive the rewards at the end of the 30-day period.
+     * @param _amount --> Please specify the amount you wish to stake for earning rewards.
+     * @dev The function used to stake your tokens in the specific protocol computes the value
+     * and transfers it to the address saving the invested amount and locking the time to receive after 30 days. 
+    */
     function farm(
         address _msgSender,
         uint256 _amount
@@ -65,6 +73,13 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
           emit Farm(_msgSender, _amount, block.timestamp);
         }
+
+    /**
+     * @param _msgSender --> _msgSender provides the address of the recipient who will receive the tokens back.
+     * @param _amount --> Specify the amount you wish to withdraw as earnings.
+     * @dev Perform the reverse operation of farming, withdrawing your earned tokens. 
+     * Remember, this function is only available after 30 days of staking your tokens for farming.
+     */
 
     function removeFarm(
         address _msgSender,
@@ -82,6 +97,11 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
             emit RemoveFarm(_msgSender, _amount, block.timestamp);
         }
 
+    /**
+    * @dev This function takes the provided wallet address and processes the reward payment to it, 
+    * calculating the time and fees to be paid.
+    * @param _msgSender --> Please provide the wallet address where the earnings should be sent.
+    */
     function payholders(
         address _msgSender
         ) external
