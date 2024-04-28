@@ -9,6 +9,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract RiceswapV1Router is IRiceswapV1Errors{
     
+    /**
+    * @dev Communicates with the indicated pool.
+    * User transfers to the router contract using the farm function
+    * and then the router transfers to the indicated pool on behalf of the user.
+    */
+
     function callbackFarm(
         address pool,
         uint256 amount
@@ -27,6 +33,12 @@ contract RiceswapV1Router is IRiceswapV1Errors{
             return true;
     }
 
+    /**
+    * @dev Communicates with the indicated pool to withdraw the specified amount.
+    * router makes the request on your behalf and the pool transfers
+    * back to your wallet.
+    */
+
     function callbackRemoveFarm(
         address pool, 
         uint256 amount)
@@ -41,6 +53,12 @@ contract RiceswapV1Router is IRiceswapV1Errors{
             return true;
     }
 
+    /**
+    * @dev Communicates with the indicated pool. The router
+    * calls the pool's payment function on your behalf,
+    * and the pool transfers its fees to the wallet specified in the farm.
+    */
+
     function callbackPayholders(
         address pool) 
          external returns(bool) {
@@ -52,6 +70,12 @@ contract RiceswapV1Router is IRiceswapV1Errors{
 
             return true;
     }
+
+    
+    /**
+    * @dev Communicates with the indicated pool to perform validation.
+    * The pool is responsible for handling all fee transfers correctly.
+    */
 
     function callbackValidator(
         address pool, 
@@ -66,6 +90,10 @@ contract RiceswapV1Router is IRiceswapV1Errors{
 
             return true;
     }
+
+    /**
+    * @dev Function responsible for providing liquidity funds to the specified pools.
+    */
 
     function callbackDeposit(
         address pool, 
@@ -83,6 +111,17 @@ contract RiceswapV1Router is IRiceswapV1Errors{
             sspool.deposit(amount);
 
             return true;
+    }
+
+    /**
+    * @dev RouterV1 was a solution created to prevent malicious delegations. If you check
+    * the contract ../libraries/SecurityCall you will see that it is responsible for proving that the caller
+    * is a routing smart contract and if it is not, it will verify if the msg.sender is the same as the address
+    * passed as a parameter.
+    */
+   
+    function RouterV1() external virtual pure returns(bool){
+        return true;
     }
 }
 

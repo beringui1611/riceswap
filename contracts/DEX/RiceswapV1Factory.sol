@@ -25,8 +25,8 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
     }
 
     /**
-     *@notice CreatePool -- This function creates only the RCN20. --
-     *@dev Responsible for creating the pool, this is where users will call 
+     @notice CreatePool -- This function creates only the RCN20. --
+     @dev Responsible for creating the pool, this is where users will call 
      in their smart contracts or through interfaces to create their pools.
      @return pool It returns the address of your new pool.
      */
@@ -55,8 +55,8 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
     }
 
     /**
-     *@notice CreatePool -- This function creates only the RCN40. --
-     *@dev Responsible for creating the pool, this is where users will call 
+     @notice CreatePool -- This function creates only the RCN40. --
+     @dev Responsible for creating the pool, this is where users will call 
      in their smart contracts or through interfaces to create their pools.
      @return pool It returns the address of your new pool.
      */

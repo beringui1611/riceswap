@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract SafeTransfer {
 
+/**
+ * @dev Unauthorized transactions 
+ */
 error RiceswapBalanceInsufficient(uint256 _amount);
 error RiceswapAmountInsufficient(uint256 _amount);
 error RiceswapAllowanceInsufficient(uint256 _amount);
@@ -12,6 +15,12 @@ error RiceswapTransferNotSuccess(bool _success);
 error RiceswapTransferNotSuccessPayment(bool _successOne, bool _successTwo);
 error RiceswapTransferNotSuccessValidator(bool _success1, bool _success2, bool success3);
 
+
+/**
+ * @dev Transaction to deposit your tokens into farm, here all validation
+ * of amount and user balance checks occur, then we perform a transferFrom
+ * to this contract, the return should be success.
+ */
 
 function safeTransferFarm(address _token0, uint256 _amount) internal virtual returns(bool){
     IERC20 tkn = IERC20(_token0);
@@ -35,6 +44,11 @@ function safeTransferFarm(address _token0, uint256 _amount) internal virtual ret
 }
 
 
+/**
+* @dev Withdrawal transaction, performs the inverse logic of farm, sending back
+* the chosen amount by the user according to their balance.
+*/
+
 function safeTransferRemoveFarm(address _token0, uint256 _amount, address _msgSender) internal virtual returns(bool){
     IERC20 tkn = IERC20(_token0);
 
@@ -49,6 +63,11 @@ function safeTransferRemoveFarm(address _token0, uint256 _amount, address _msgSe
     return success;
 }
 
+
+/**
+* @dev Payment transaction, pays the (users) and fees to the (dex) in the same transaction.
+* The calculation is done in the ../libraries/Math.sol library.
+*/
 
 function safeTransferPayment(
     address _token1,
@@ -70,6 +89,13 @@ function safeTransferPayment(
         return (successMonthFee, successDexFee);
     }
 
+    
+    /**
+    * @dev Validation transfer, makes the payment to the (validator, user, dex),
+    * the fee calculation for validator, DEX, and user is done in ../libraries/Math.sol
+    * we receive all the addresses and values already set to simply transfer in a
+    * safe and validated manner.
+    */
 
     function safeTransferValidator(
         address _token1, 
@@ -96,8 +122,12 @@ function safeTransferPayment(
             return (successMonthFee, successDexFee, successValidatorFee);
         }
 
-
-
+    
+    /**
+    * @dev owner function --> the owner deposits the monthly payment liquidity here,
+    * where it is saved in the pool address allowing for the correct split for each user.
+    */
+   
     function safeTransferDeposit(
         address _token1,
         uint256 _amount

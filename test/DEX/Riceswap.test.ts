@@ -180,6 +180,18 @@ import { ZeroAddress } from "ethers";
       });
 
 
+      it("Should farm erorr NO DELEGATE (POOL)", async function () {
+        const {pool, ricecoin, otherAccount, account3} = await loadFixture(deployFixture);
+        await ricecoin.transfer(otherAccount, AMOUNT);
+        const IOther = ricecoin.connect(otherAccount);
+        await IOther.approve(pool.target, AMOUNT);
+
+        const IOtherPool = pool.connect(otherAccount);
+        await expect(IOtherPool.farm(account3, AMOUNT)).to.be.revertedWith("NO DELEGATE");
+        
+      });
+
+
       it("Should farm allowance < amount (POOL)", async function () {
         const {pool, ricecoin, otherAccount} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
@@ -211,9 +223,11 @@ import { ZeroAddress } from "ethers";
         
         await time.increase(30 *24 *60 *60);
         
+      
         const tx = await IOtherPool.removeFarm(otherAccount, AMOUNT);
         const txUsed = await tx.wait();
         console.log(`removefarm gas used: ${txUsed?.gasUsed}`)
+               
 
         expect(await IOtherPool.farming(otherAccount.address)).to.equal(0n);
         expect(await ricecoin.balanceOf(otherAccount.address)).to.equal(AMOUNT);       

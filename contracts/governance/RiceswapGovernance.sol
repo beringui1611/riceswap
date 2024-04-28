@@ -9,7 +9,7 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
 
     enum Vote 
     {
-        YES,
+        YES, 
         NO, 
         NULL
     }
@@ -47,7 +47,9 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
     ProposalData[] public proposalData;
     
     mapping(bytes32 => Executed) public executeds;
-    mapping(address => mapping(bytes32 => uint256)) votes;
+    mapping(address => mapping(bytes32 => uint256)) public votes;
+    mapping(address => uint8) public prize;
+    mapping(address => mapping(bytes32 => bool)) public blockVote;
 
 
     constructor(address _token0, uint64 _percent)
@@ -84,25 +86,36 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
             }));
     }
 
-    function vote(uint8 _id, uint8 _vote) external {
+    function vote(
+        uint8 _id, 
+        uint8 _choice, 
+        uint256 _vote
+            ) external {
         ProposalData storage proposal = proposalData[_id];
         
         if(block.timestamp >= proposal.createdAt + proposal.finished) revert();
-        if(_vote > 2) revert();
-        if(token.balanceOf(msg.sender) < 0) revert();
+        if(_choice < 2) revert();
+        if(blockVote[msg.sender][proposal.hash] == true) revert();
 
-        if(_vote == uint8(Vote.YES)){
-            proposal.counters.yes++;
+        safeTransferVote(_vote, proposal.hash);
+        uint256 energy = power(_vote);   
+
+        if(_choice == uint8(Vote.YES)){
+            proposal.counters.yes += energy;
         }
-        else if(_vote == uint8(Vote.NO)){
-            proposal.counters.no++;
+        else if(_choice == uint8(Vote.NO)){
+            proposal.counters.no += energy;
         }
         else {
-            proposal.counters._null++;
+            proposal.counters._null += energy;
         }
+
+        blockVote[msg.sender][proposal.hash] = true;
     }
 
-    function closeVote(uint8 _id) external {
+    function closeVote(
+        uint8 _id
+        ) external {
         ProposalData storage proposal = proposalData[_id];
         if(block.timestamp > proposal.createdAt + proposal.finished){
              if(proposal.counters.yes > proposal.counters.no){
@@ -122,7 +135,7 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
              else if(proposal.counters._null > proposal.counters.yes + proposal.counters.no){
                 delete proposalData[_id];
                 delete executeds[proposal.hash];
-             }
+            }
         }
         else 
         {
@@ -134,29 +147,35 @@ contract RiceswapGovernance is IRiceswapGovernanceErrors{
         return proposalData;
     }
 
-    function power() internal virtual returns(uint256){
-        uint256 _power = token.balanceOf(msg.sender);
-        uint256 energy;
+    function power(
+        uint256 _vote
+        ) internal virtual returns(uint256){
 
-        if(_power < 1000 ether){
-            energy = 0;
-        }
-        else if(_power > 1000 ether){
-            energy = 1000;
-              
-            uint256 x = _power / energy;
+        if(_vote < 1 *1e18) revert();
 
-                return x;        
+        uint256 _power = mathPower(_vote);
 
-        }
+        return _power; 
     }
 
-    function safeTransferVote(uint256 _vote, bytes32 _hash) internal virtual {
-        if(_vote <= 0) revert();
+    function safeTransferVote(
+        uint256 _vote, 
+        bytes32 _hash
+        ) internal virtual {
+        if(_vote < 1 * 1e18) revert();
 
         token.transferFrom(msg.sender, address(this), _vote);
         votes[msg.sender][_hash] = _vote;
+      
+        if(prize[msg.sender] < 10){
+            prize[msg.sender] += 1;
+        }
+    }
 
+    function mathPower(
+        uint256 _power
+        ) internal virtual returns(uint256){
+        return _power * 1 / 1000;
     }
 
     

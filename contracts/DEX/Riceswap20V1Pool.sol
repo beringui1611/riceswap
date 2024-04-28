@@ -5,11 +5,14 @@ import "./interfaces/IRiceswapV1Factory.sol";
 import "./libraries/SafeTransfers.sol";
 import "./interfaces/IRiceswapV1Errors.sol";
 import "./libraries/Math.sol";
+import "./libraries/SecurityCalls.sol";
 
 //corrigir falha de qualquer user chamar a função por você
 
-contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
-    
+///@title Riceswap20V1Pool -- Fixed income --
+
+contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall{
+
     address public immutable token0;
 
     address public immutable token1;
@@ -24,6 +27,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
     address public immutable factory;
 
+    ///@dev Events emitted for every user request, keeping the pool informed
     event Farm(address indexed _to, uint256 indexed _amount, uint256 _timestamp);
     event RemoveFarm(address indexed _to, uint256 indexed _amount, uint256 _timestamp);
     event PayHolder(address indexed _to, uint256 indexed _txMonth, uint256 _timestamp);
@@ -31,9 +35,9 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
     event Deposit(address indexed _from, address indexed _to, uint256 _amount);
 
 
-    mapping(address => uint256) public farming; ///@param Farming where addresses containing the amount of tokens invested will be saved.  
-    mapping(address => uint256) public timeLock; ///@param Timelock stores the address containing the lock-up time for each user.
-    mapping(address => uint256) public liquidity; ///@param Liquidity Here we store the liquidity information for this contract.
+    mapping(address => uint256) public farming; ///@dev Mapping storing users' invested token amounts. 
+    mapping(address => uint256) public timeLock; ///@dev Mapping storing lock-up time for each user.
+    mapping(address => uint256) public liquidity;  ///@dev Liquidity information stored here.
     
 
     constructor(
@@ -55,18 +59,22 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
         index = _index;
     }
 
-    /**
-     * @param _msgSender --> Provide your wallet address to save in the farming pool, where you will receive the rewards at the end of the 30-day period.
-     * @param _amount --> Please specify the amount you wish to stake for earning rewards.
-     * @dev The function used to stake your tokens in the specific protocol computes the value
-     * and transfers it to the address saving the invested amount and locking the time to receive after 30 days. 
-    */
+     /**
+      @notice FARM -- Deposit funds for fixed income --
+      @dev Users deposit tokens into the pool to earn fixed income. 
+      The deposited tokens will receive monthly percentages based on each project.
+      Once the user transfers their tokens to this contract, we record the current time 
+      and lock it so that only after a certain time period X for each project, 
+      they receive their earnings.
+      @param _msgSender Address of the user depositing funds.
+      @param _amount Amount to deposit.
+     */
+
     function farm(
         address _msgSender,
         uint256 _amount
-        ) external 
+        ) external noDelegateCall(_msgSender) 
         {
-
           safeTransferFarm(token0, _amount);
           timeLock[_msgSender] = block.timestamp;
           farming[_msgSender] += _amount;
@@ -75,16 +83,17 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
         }
 
     /**
-     * @param _msgSender --> _msgSender provides the address of the recipient who will receive the tokens back.
-     * @param _amount --> Specify the amount you wish to withdraw as earnings.
-     * @dev Perform the reverse operation of farming, withdrawing your earned tokens. 
-     * Remember, this function is only available after 30 days of staking your tokens for farming.
+      @notice REMOVE FARM -- Withdraw funds from fixed income --
+      @dev Users can withdraw their tokens from fixed income to perform other operations.
+      They can only remove funds after a certain period (e.g., 30 days) to avoid conflicts with their earnings.
+      @param _msgSender Address of the user withdrawing funds.
+      @param _amount Amount to withdraw.
      */
 
     function removeFarm(
         address _msgSender,
         uint256 _amount 
-        ) external
+        ) external noDelegateCall(_msgSender) 
         {
             if(block.timestamp < timeLock[_msgSender] + timer) revert IRiceswapTimeNotExpired(block.timestamp);
             if(farming[_msgSender] < _amount) revert IRiceswapInsufficientFarming(_amount);
@@ -96,15 +105,18 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
             emit RemoveFarm(_msgSender, _amount, block.timestamp);
         }
-
+    
+   
     /**
-    * @dev This function takes the provided wallet address and processes the reward payment to it, 
-    * calculating the time and fees to be paid.
-    * @param _msgSender --> Please provide the wallet address where the earnings should be sent.
-    */
+      @notice PAYHOLDERS -- Pay earnings to holders --
+      @dev This function pays earnings to holders. Users specify their wallet address,
+      and the function verifies all necessary conditions to pay out their monthly earnings.
+      @param _msgSender User's wallet address.
+     */
+
     function payholders(
         address _msgSender
-        ) external
+        ) external noDelegateCall(_msgSender) 
         {
         uint256 amount = farming[_msgSender];
 
@@ -125,6 +137,14 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
 
         emit PayHolder(_msgSender, txMonth, block.timestamp);
         }
+
+    /**
+     @notice VALIDATOR -- Validator ecosystem --
+     @dev This function allows users to validate pending payments and be rewarded for it.
+     It's a simple way to generate income and improve payment performance for everyone.
+     @param _from Validator's address.
+     @param _msgSender Address of the recipient.
+     */
 
     function validator(
         address _from,
@@ -154,9 +174,10 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
           emit Validator(_from, txMonth, _msgSender, txValidator);
         }
 
+    //@riceswap Deposit liquidity to the contract
     function deposit(
         uint256 _amount
-        ) external 
+        ) external
         {
             safeTransferDeposit(token1, _amount);
             liquidity[address(this)] += _amount;
@@ -165,6 +186,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math {
                 
         }
 
+    //@riceswap Fetch real-time fees from the dex for each transaction
     function updateFee() 
         internal virtual view returns(uint256)
         {
