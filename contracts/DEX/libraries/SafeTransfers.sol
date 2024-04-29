@@ -149,10 +149,10 @@ function safeTransferPayment(
 
 
     function safeDepositPreSale(
-        address token0, 
+        address token1, 
         uint256 amount
         ) internal virtual returns(bool){
-            IERC20 tkn = IERC20(token0);
+            IERC20 tkn = IERC20(token1);
 
             if(amount <= 0) revert RiceswapAmountInsufficient(0);
             if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
@@ -165,6 +165,96 @@ function safeTransferPayment(
             }
 
             return success;
+    }
+
+    function safeTransferBuy(
+        address token1,
+        uint256 amount
+        ) internal virtual returns(bool){
+            IERC20 tkn = IERC20(token1);
+            
+            if(amount <= 0) revert RiceswapAmountInsufficient(0);
+
+            if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
+            if(tkn.allowance(msg.sender, address(this)) < amount) revert RiceswapAllowanceInsufficient(amount);
+
+            (bool success) = tkn.transferFrom(msg.sender, address(this), amount);
+
+            if(!success){
+                revert RiceswapTransferNotSuccess(success);
+            }
+
+            return success;
+            
+    }
+
+    function safeTransferRefund(
+        address token0,
+        address token1, 
+        uint256 amount,
+        uint256 value
+        ) internal virtual returns(bool, bool){
+            IERC20 tkn = IERC20(token0);
+            IERC20 tknRefund = IERC20(token1);
+
+            if(amount <= 0) revert RiceswapAmountInsufficient(0);
+            if(value <= 0) revert RiceswapAmountInsufficient(0);
+            if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
+            if(tkn.allowance(msg.sender, address(this)) < amount) revert RiceswapAllowanceInsufficient(amount);
+
+            (bool success) = tkn.transferFrom(msg.sender, address(this), amount);
+            (bool successRefund) = tknRefund.transfer(msg.sender, value);
+
+            if(!success ||!successRefund){
+                revert RiceswapTransferNotSuccessPayment(success, successRefund);
+            }
+
+            return (success, successRefund);
+    }
+
+    
+    function safeTransferClaim(
+        address token0,
+        uint256 amount
+        ) internal virtual returns(bool){
+            IERC20 tkn = IERC20(token0);
+            
+            if(amount <= 0) revert RiceswapAmountInsufficient(0);
+
+            (bool success) = tkn.transfer(msg.sender, amount);
+
+            if(!success){
+                revert RiceswapTransferNotSuccess(success);
+            }
+
+            return success;
+            
+    }
+
+       function safeTransferWithdraw(
+        address token1,
+        address owner,
+        address dex,
+        uint16 dexFee
+        ) internal virtual returns(bool, bool){
+            IERC20 tkn = IERC20(token1);
+            
+            if(tkn.balanceOf(address(this)) <= 0) revert RiceswapAmountInsufficient(0);
+
+            uint256 presale = tkn.balanceOf(address(this));
+
+            uint256 txFee = presale * dexFee / 100;
+
+            (bool success) = tkn.transfer(owner, presale - txFee);
+            (bool successDexFee) = tkn.transfer(dex, txFee);
+
+            if(!success ||!successDexFee){
+                revert RiceswapTransferNotSuccessPayment(success, successDexFee);
+
+            }
+
+            return (success, successDexFee);
+            
     }
 
 }

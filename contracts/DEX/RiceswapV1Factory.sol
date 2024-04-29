@@ -7,7 +7,7 @@ import "./RiceswapV1Deployer.sol";
 contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
 
     address public owner;
-    uint8 public dexFee;
+    uint16 public dexFee;
     uint256 timer = 30 *24 *60 *60; ///@dev Used to define the payment time for pools.
 
     
@@ -100,7 +100,7 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
     }
 
     ///@return dexFee This function returns the real-time rice rate for pools to instantiate and utilize, as defined in the pool. 
-    function getFee() external view returns(uint256){
+    function getFee() external view returns(uint16){
         return dexFee;
     }
     

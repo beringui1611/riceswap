@@ -5,7 +5,7 @@ interface IRiceswapV1Factory {
 
     function owner() external view returns(address);
 
-    function getFee() external view returns(uint256);
+    function getFee() external view returns(uint16);
 
     function createPool(
         address token0,

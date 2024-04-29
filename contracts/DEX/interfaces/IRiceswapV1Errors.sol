@@ -26,4 +26,12 @@ interface IRiceswapV1Errors {
 
     error IRiceswapLimitReached(uint256 _limit);
 
+    error IRiceswapErrorBuy(uint256 _amount);
+
+    error IRiceswapInvalidRefund(uint256 _amount);
+
+    error IRiceswapPreSaleFinished(bool _finished);
+
+    error IRiceswapPreSaleNotFinished(bool _finished);
+
 }
