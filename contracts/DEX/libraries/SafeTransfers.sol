@@ -147,4 +147,24 @@ function safeTransferPayment(
             return success;
         }
 
+
+    function safeDepositPreSale(
+        address token0, 
+        uint256 amount
+        ) internal virtual returns(bool){
+            IERC20 tkn = IERC20(token0);
+
+            if(amount <= 0) revert RiceswapAmountInsufficient(0);
+            if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
+            if(tkn.allowance(msg.sender, address(this)) < amount) revert RiceswapAllowanceInsufficient(amount);
+
+            (bool success) = tkn.transferFrom(msg.sender, address(this), amount);
+
+            if(!success){
+                revert RiceswapTransferNotSuccess(success);
+            }
+
+            return success;
+    }
+
 }

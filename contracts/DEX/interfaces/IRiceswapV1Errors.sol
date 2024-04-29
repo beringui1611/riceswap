@@ -22,4 +22,8 @@ interface IRiceswapV1Errors {
 
     error IRiceswapAmount(uint256 _amount);
 
+    error IRiceswapMaximumRange(uint256 _amount);
+
+    error IRiceswapLimitReached(uint256 _limit);
+
 }
