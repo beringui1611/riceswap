@@ -34,4 +34,6 @@ interface IRiceswapV1Errors {
 
     error IRiceswapPreSaleNotFinished(bool _finished);
 
+    error IRiceswapBalanceClaimInvalid(uint256 _claim);
+
 }

@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import "./libraries/SafeTransfers.sol";
 import "./interfaces/IRiceswapV1Errors.sol";
 import "./interfaces/IRiceswapV1Factory.sol";
+import "./libraries/SecurityCalls.sol";
 
-contract RiceswapV1Saler is SafeTransfer, IRiceswapV1Errors{
+contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
 
     address public immutable owner;
 
@@ -27,11 +28,18 @@ contract RiceswapV1Saler is SafeTransfer, IRiceswapV1Errors{
     constructor(
     address _owner, 
     uint256 _range, 
-    uint16 _price)
+    uint16 _price,
+    address _token0,
+    address _token1,
+    address _factory
+    )
     {
         owner = _owner;
         range = _range;
         price = _price;
+        token0 = _token0;
+        token1 = _token1;
+        factory = _factory;
     }
 
 
@@ -39,11 +47,15 @@ contract RiceswapV1Saler is SafeTransfer, IRiceswapV1Errors{
         uint256 amount
         ) external {
 
-        if(amount < 0) revert IRiceswapAmount(amount);
+        if(amount <= 0) revert IRiceswapAmount(amount);
 
         if(limitMarking[token0] > range){
-            revert  IRiceswapMaximumRange(amount);
+            revert IRiceswapMaximumRange(amount);
         }
+        else if(amount > range){
+            revert IRiceswapMaximumRange(amount);
+        }
+        
 
         safeDepositPreSale(token0, amount);
         limitMarking[token0] += amount;
@@ -58,44 +70,49 @@ contract RiceswapV1Saler is SafeTransfer, IRiceswapV1Errors{
         
     }
 
-    function buy(uint256 amount) external lockPreSale {
+    function buy(address _msgSender, uint256 amount) external lockPreSale noDelegatePresale(_msgSender){
         if(amount <= 0) revert IRiceswapAmount(amount);
 
         if(!checkRange()){
             revert IRiceswapErrorBuy(0);
-        } 
-        
+        }
+               
         uint256 value = amount * price;
 
+        finished(amount);
         safeTransferBuy(token1, value);
         limitMarking[token0] -= amount;
-        _claim[msg.sender] += amount;
+        _claim[_msgSender] += amount;
       
     }
 
-    function refund(uint256 amount) external lockPreSale {
+    function refund(address _msgSender, uint256 amount) external lockPreSale noDelegatePresale(_msgSender) {
         if(amount <= 0) revert IRiceswapAmount(amount);
-        if(_claim[msg.sender] < amount) revert IRiceswapInvalidRefund(amount);
+        if(_claim[_msgSender] < amount) revert IRiceswapInvalidRefund(amount);
 
         uint256 value = amount * price;
 
-        safeTransferRefund(token0, token1, amount, value);
-        _claim[msg.sender] -= amount;
+        safeTransferRefund(_msgSender, token1, value);
+        _claim[_msgSender] -= amount;
         limitMarking[token0] += amount;
     }
 
-    function claim() external {
+    function claim(address _msgSender) external noDelegatePresale(_msgSender) {
         if(!estimateRange) revert IRiceswapPreSaleNotFinished(false);
 
-        if(_claim[msg.sender] > 0){
-            (uint256 totalClaim) = getClaim();
-            safeTransferClaim(token0, totalClaim);
+        if(_claim[_msgSender] > 0){
+            (uint256 totalClaim) = getClaim(_msgSender);
+            safeTransferClaim(_msgSender, token0, totalClaim);
+        }
+        else
+        {
+            revert IRiceswapBalanceClaimInvalid(0);
         }
         
     }
 
-    function getClaim() public virtual view returns(uint256){
-        return _claim[msg.sender];
+    function getClaim(address _msgSender) public virtual view returns(uint256){
+        return _claim[_msgSender];
     }
 
     function checkRange() internal virtual returns(bool){

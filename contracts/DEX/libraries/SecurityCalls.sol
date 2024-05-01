@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "../interfaces/IRiceswapV1Router.sol";
+import "../interfaces/ISallerV1Router.sol";
 
 contract SecurityCall{
 
@@ -43,6 +44,22 @@ contract SecurityCall{
         }
 
         _;
+    }
+
+    modifier noDelegatePresale(address _msgSender) {
+        if(isRouter(msg.sender)){
+            require(ISallerV1Router(msg.sender).RouterV1(),
+            "NO DELEGATE"
+            );
+           
+        }
+        else if(!isRouter(msg.sender)){
+            require(_msgSender == msg.sender,
+            "NO DELEGATE"
+            );
+        }
+
+         _;
     }
 
 }

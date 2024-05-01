@@ -149,10 +149,10 @@ function safeTransferPayment(
 
 
     function safeDepositPreSale(
-        address token1, 
+        address token0, 
         uint256 amount
         ) internal virtual returns(bool){
-            IERC20 tkn = IERC20(token1);
+            IERC20 tkn = IERC20(token0);
 
             if(amount <= 0) revert RiceswapAmountInsufficient(0);
             if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
@@ -189,31 +189,26 @@ function safeTransferPayment(
     }
 
     function safeTransferRefund(
-        address token0,
+        address _msgSender,
         address token1, 
-        uint256 amount,
         uint256 value
-        ) internal virtual returns(bool, bool){
-            IERC20 tkn = IERC20(token0);
+        ) internal virtual returns(bool){
             IERC20 tknRefund = IERC20(token1);
 
-            if(amount <= 0) revert RiceswapAmountInsufficient(0);
             if(value <= 0) revert RiceswapAmountInsufficient(0);
-            if(tkn.balanceOf(msg.sender) < amount) revert RiceswapBalanceInsufficient(amount);
-            if(tkn.allowance(msg.sender, address(this)) < amount) revert RiceswapAllowanceInsufficient(amount);
-
-            (bool success) = tkn.transferFrom(msg.sender, address(this), amount);
-            (bool successRefund) = tknRefund.transfer(msg.sender, value);
-
-            if(!success ||!successRefund){
-                revert RiceswapTransferNotSuccessPayment(success, successRefund);
+   
+            (bool success) = tknRefund.transfer(_msgSender, value);
+         
+            if(!success){
+                revert RiceswapTransferNotSuccess(success);
             }
 
-            return (success, successRefund);
+            return success;
     }
 
     
     function safeTransferClaim(
+        address _msgSender,
         address token0,
         uint256 amount
         ) internal virtual returns(bool){
@@ -221,7 +216,7 @@ function safeTransferPayment(
             
             if(amount <= 0) revert RiceswapAmountInsufficient(0);
 
-            (bool success) = tkn.transfer(msg.sender, amount);
+            (bool success) = tkn.transfer(_msgSender, amount);
 
             if(!success){
                 revert RiceswapTransferNotSuccess(success);
