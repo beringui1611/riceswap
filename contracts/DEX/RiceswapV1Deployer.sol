@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import "./Riceswap20V1Pool.sol";
 import "./Riceswap40V1Pool.sol";
+import "./RiceswapV1Saller.sol";
+import "./interfaces/IRiceswapWallet.sol";
 
 contract RiceswapV1Deployer {
 
@@ -22,13 +24,28 @@ contract RiceswapV1Deployer {
         address factory;
         address token0;
         address token1;
-        address admin;
+        address owner;
+        address dexWallet;
         uint256 time;
         uint16 fee;
         uint64 index;
     }
 
+    struct PreSale
+    {
+        address owner;
+        uint256 range;
+        uint16 price;
+        address token0;
+        address token1;
+        address factory;
+        address dexWallet;
+    }
+
+    PreSale public presaleParams;
     Parameters public parameters;
+
+
 
     /**
      @notice Deployment function fixed income -- RCN20 -- 
@@ -40,19 +57,21 @@ contract RiceswapV1Deployer {
         address factory, 
         address token0,
         address token1,
-        address admin,
+        address owner,
+        address dexWallet,
         uint256 time,
         uint16 fee,
         uint64 index
     ) internal returns(address pool) 
     {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index});
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, owner: owner, dexWallet : dexWallet, time: time, fee: fee, index: index});
         bytes32 salt = keccak256(abi.encode(token0, token1, fee));
         Riceswap20V1Pool newPool = new Riceswap20V1Pool{salt: salt}(
             factory,
             token0,
             token1,
-            admin,
+            owner,
+            dexWallet,
             time,
             fee,
             index
@@ -71,19 +90,21 @@ contract RiceswapV1Deployer {
         address factory,
         address token0,
         address token1,
-        address admin,
+        address owner,
+        address dexWallet,
         uint256 time,
         uint16 fee,
         uint64 index
     ) internal returns(address pool) 
     {
-        parameters = Parameters({factory: factory, token0: token0, token1: token1, admin: admin, time: time, fee: fee, index: index});
+        parameters = Parameters({factory: factory, token0: token0, token1: token1, owner: owner, dexWallet: dexWallet, time: time, fee: fee, index: index});
         bytes32 salt = keccak256(abi.encode(token0, token1, fee));
         Riceswap40V1Pool newPool = new Riceswap40V1Pool{salt: salt}(
             factory,
             token0,
             token1,
-            admin,
+            owner,
+            dexWallet,
             time,
             fee,
             index
@@ -91,5 +112,30 @@ contract RiceswapV1Deployer {
         pool = address(newPool);
         delete parameters;
     }
+
+    function deployPresale(
+        address owner, 
+        uint256 range, 
+        uint16 price, 
+        address token0, 
+        address token1, 
+        address factory,
+        address dexWallet
+        ) internal returns(address presale) {
+            presaleParams = PreSale({owner: owner, range: range, price: price, token0: token0, token1: token1, factory: factory, dexWallet: dexWallet});
+            bytes32 salt = keccak256(abi.encode(token0, token1, range));
+            RiceswapV1Saller newPresale = new RiceswapV1Saller{salt: salt}(
+                owner,
+                range,
+                price,
+                token0,
+                token1,
+                factory,
+                dexWallet
+            );
+
+           presale = address(newPresale);
+           delete presale;
+        }
 
 }

@@ -15,27 +15,27 @@ const config: HardhatUserConfig = {
       viaIR: true,
     }
   },
-  // networks: {
-  //   local: {
-  //     chainId: 31337,
-  //     url: "http://127.0.0.1:8545/",
-  //     accounts: {
-  //       mnemonic: "test test test test test test test test test test test junk"
-  //     }
-  //   }
-  // },
+   networks: {
+     local: {
+       chainId: 31337,
+       url: "http:127.0.0.1:8545/",
+       accounts: {
+         mnemonic: "test test test test test test test test test test test junk"
+       }
+     }
+   },
   //  networks: {
-  //    bsctest: {
-  //      url: "https:data-seed-prebsc-1-s1.binance.org:8545/",
-  //      chainId: 97,
-  //      accounts: {
-  //        mnemonic: process.env.SECRET
-  //      }
-  //    },
-  //  },
-  //  etherscan: {
-  //    apiKey: process.env.API_KEY
-  //  }
+  //     bsctest: {
+  //       url: "https://ethereum-sepolia-rpc.publicnode.com",
+  //       chainId: 11155111,
+  //       accounts: {
+  //         mnemonic: process.env.SECRET
+  //       }
+  //     },
+  //   },
+  //   etherscan: {
+  //     apiKey: process.env.API_KEY
+  //   }
 };
 
 export default config;

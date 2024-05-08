@@ -36,4 +36,8 @@ interface IRiceswapV1Errors {
 
     error IRiceswapBalanceClaimInvalid(uint256 _claim);
 
+    error IRiceswapRangeInvalid(uint256 _range);
+
+    error IRiceswapInvalidPrice(uint256 _range);
+
 }

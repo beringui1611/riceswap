@@ -2,8 +2,10 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "../interfaces/IRiceswapWallet.sol";
 
 contract SafeTransfer {
+
 
 /**
  * @dev Unauthorized transactions 
@@ -78,11 +80,15 @@ function safeTransferPayment(
     ) internal virtual returns(bool, bool)
     {
         IERC20 tkn = IERC20(_token1);
+        IRiceswapWallet tknReceiver = IRiceswapWallet(_dexWallet);
 
         if(_monthFee <= 0 || _dexFee <= 0) revert RiceswapAmountInsufficient(0);
 
         (bool successMonthFee) = tkn.transfer(_msgSender, _monthFee);
-        (bool successDexFee) = tkn.transfer(_dexWallet, _dexFee); //colocar endereço da wallet para receber taxas 
+
+        tkn.approve(_dexWallet, _dexFee);
+        (bool successDexFee) = tknReceiver.receiver( _dexFee, _token1);
+        
 
         if(!successMonthFee || !successDexFee) revert RiceswapTransferNotSuccessPayment(successMonthFee, successMonthFee);
 
@@ -108,12 +114,17 @@ function safeTransferPayment(
         ) internal virtual returns(bool, bool, bool)
         {
             IERC20 tkn = IERC20(_token1);
+            IRiceswapWallet tknReceiver = IRiceswapWallet(_dexWallet);
+
 
             if(_monthFee <= 0 || _dexFee <= 0 || _validatorFee <= 0) revert RiceswapAmountInsufficient(0);
 
             (bool successMonthFee) = tkn.transfer(_from, _monthFee);
-            (bool successDexFee) = tkn.transfer(_dexWallet, _dexFee); //colocar endereço da wallet para receber taxas 
             (bool successValidatorFee) = tkn.transfer(_msgSender, _validatorFee);
+
+            tkn.approve(_dexWallet, _dexFee);
+            (bool successDexFee) = tknReceiver.receiver(_dexFee, _token1);
+
 
             if(!successMonthFee || !successDexFee || !successValidatorFee){
                 revert RiceswapTransferNotSuccessValidator(successMonthFee, successMonthFee, successValidatorFee);
@@ -196,8 +207,8 @@ function safeTransferPayment(
             IERC20 tknRefund = IERC20(token1);
 
             if(value <= 0) revert RiceswapAmountInsufficient(0);
-   
-            (bool success) = tknRefund.transfer(_msgSender, value);
+            uint256 txFee = value * 5 / 100;
+            (bool success) = tknRefund.transfer(_msgSender, value - txFee);
          
             if(!success){
                 revert RiceswapTransferNotSuccess(success);
@@ -229,10 +240,11 @@ function safeTransferPayment(
        function safeTransferWithdraw(
         address token1,
         address owner,
-        address dex,
+        address dexWallet,
         uint16 dexFee
         ) internal virtual returns(bool, bool){
             IERC20 tkn = IERC20(token1);
+            IRiceswapWallet tknReceiver = IRiceswapWallet(dexWallet);
             
             if(tkn.balanceOf(address(this)) <= 0) revert RiceswapAmountInsufficient(0);
 
@@ -241,7 +253,9 @@ function safeTransferPayment(
             uint256 txFee = presale * dexFee / 100;
 
             (bool success) = tkn.transfer(owner, presale - txFee);
-            (bool successDexFee) = tkn.transfer(dex, txFee);
+
+            tkn.approve(dexWallet, txFee);
+            (bool successDexFee) = tknReceiver.receiver(txFee, token1);
 
             if(!success ||!successDexFee){
                 revert RiceswapTransferNotSuccessPayment(success, successDexFee);

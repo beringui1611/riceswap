@@ -20,6 +20,8 @@ contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
 
     address public immutable factory;
 
+    address public immutable dexWallet;
+
     bool public estimateRange;
 
     mapping(address => uint256) public limitMarking;
@@ -31,7 +33,8 @@ contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
     uint16 _price,
     address _token0,
     address _token1,
-    address _factory
+    address _factory,
+    address _dexWallet
     )
     {
         owner = _owner;
@@ -40,6 +43,7 @@ contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
         token0 = _token0;
         token1 = _token1;
         factory = _factory;
+        dexWallet = _dexWallet;
     }
 
 
@@ -66,7 +70,7 @@ contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
         require(msg.sender == owner, "O");
         if(!estimateRange) revert IRiceswapPreSaleNotFinished(false);
 
-        safeTransferWithdraw(token1, owner, factory, dexFee());
+        safeTransferWithdraw(token1, owner, dexWallet, dexFee());
         
     }
 

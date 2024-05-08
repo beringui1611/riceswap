@@ -3,17 +3,20 @@
      time,
    } from "@nomicfoundation/hardhat-toolbox/network-helpers";
    import { expect } from "chai";
-import { ZeroAddress } from "ethers";
+import { Wallet, ZeroAddress } from "ethers";
    import { ethers } from "hardhat";
  
    describe("RiceCoin", function () {
     const TIME = 30 *24 *60 *60;
     const AMOUNT = 1000_000_000_000_000_000_000n;
      async function deployFixture() {
-       const [owner, otherAccount, account2, account3] = await ethers.getSigners();
+       const [owner, otherAccount, account2, account3, account4, account5] = await ethers.getSigners();
+
+       const Wallet = await ethers.getContractFactory("RiceswapWallet");
+       const wallet = await Wallet.deploy();
  
        const Riceswap = await ethers.getContractFactory("RiceswapV1Factory");
-       const riceswap = await Riceswap.deploy();
+       const riceswap = await Riceswap.deploy(wallet.target);
 
        const RiceCoin = await ethers.getContractFactory("RiceCoin");
        const ricecoin = await RiceCoin.deploy();
@@ -22,17 +25,17 @@ import { ZeroAddress } from "ethers";
        const usdt = await USDT.deploy();
 
        const Pool = await ethers.getContractFactory("Riceswap20V1Pool");
-       const pool = await Pool.deploy(riceswap.target, ricecoin.target, usdt.target, account2.address, TIME, 1n, 100n)
+       const pool = await Pool.deploy(riceswap.target, ricecoin.target, usdt.target, account2.address, wallet.target, TIME, 1n, 100n)
 
        
        const Pool40 = await ethers.getContractFactory("Riceswap40V1Pool");
-       const pool40 = await Pool40.deploy(riceswap.target, ricecoin.target, usdt.target, account2.address, TIME, 1n, 100n)
+       const pool40 = await Pool40.deploy(riceswap.target, ricecoin.target, usdt.target, account2.address, wallet.target, TIME, 1n, 100n)
 
        const RiceswapRouter = await ethers.getContractFactory("RiceswapV1Router");
        const riceswapRouter = await RiceswapRouter.deploy();
          
  
-       return {riceswap, ricecoin, pool, usdt, owner, otherAccount, account2, account3, pool40, riceswapRouter};
+       return {riceswap, ricecoin, pool, usdt, owner, otherAccount, account2, account3, pool40, riceswapRouter, account4, account5, wallet};
      }
  
      describe("Deployment", function () {
@@ -280,7 +283,7 @@ import { ZeroAddress } from "ethers";
 
 
       it("Should payholders (POOL)", async function () {
-        const {pool, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool.target, AMOUNT);
@@ -299,12 +302,12 @@ import { ZeroAddress } from "ethers";
         console.log(`payholders gas used: ${txUsed?.gasUsed}`)
        
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet.target)).to.equal(500000000000000000n);
         expect(await pool.liquidity(pool.target)).to.equal(990000000000000000000n);
       });
 
       it("Should payholders 2 months (POOL)", async function () {
-        const {pool, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool.target, AMOUNT);
@@ -321,7 +324,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
        
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n *2n);
-        expect(await usdt.balanceOf(account2)).to.equal(1000000000000000000n);
+        expect(await usdt.balanceOf(wallet.target)).to.equal(1000000000000000000n);
         expect(await pool.liquidity(pool.target)).to.equal(980000000000000000000n );
 
       });
@@ -379,7 +382,7 @@ import { ZeroAddress } from "ethers";
       });
       
       it("Should validator ", async function () {
-        const {pool, ricecoin, otherAccount, usdt, account2, account3} = await loadFixture(deployFixture);
+        const {pool, ricecoin, otherAccount, usdt, wallet, account3} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool.target, AMOUNT);
@@ -400,7 +403,7 @@ import { ZeroAddress } from "ethers";
 
         expect(await usdt.balanceOf(otherAccount.address)).to.equal(8500000000000000000n);
         expect(await usdt.balanceOf(account3.address)).to.equal(1000000000000000000n);
-        expect(await usdt.balanceOf(account2.address)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet.target)).to.equal(500000000000000000n);
         expect(await usdt.balanceOf(pool.target)).to.equal(990000000000000000000n);
 
       });
@@ -500,6 +503,15 @@ import { ZeroAddress } from "ethers";
         
       });
 
+      it("Should deposit amount <= 0 (POOL) ", async function () {
+        const {pool, ricecoin, otherAccount, usdt, account3, account2} = await loadFixture(deployFixture);
+        expect(await pool.owner()).to.equal(account2)
+        const IAdmin = pool.connect(account2);
+
+        await IAdmin.transferOwnership(account3);
+        expect(await pool.owner()).to.equal(account3);        
+      });
+
       // ---------------------------------- RCN40 -----------------------------------------------------
 
       it("Should createPool RCN40 (variable fee)", async function () {
@@ -514,7 +526,7 @@ import { ZeroAddress } from "ethers";
       });
 
       it("Should payholders (POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -531,7 +543,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet.target)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -542,12 +554,12 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(28500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(1500000000000000000n);
+        expect(await usdt.balanceOf(wallet.target)).to.equal(1500000000000000000n);
 
       });
 
-      it("Should payholdersupgradeable fee(POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+      it("Should payholders upgradeable fee(POOL40)", async function () {
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -564,7 +576,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -575,12 +587,12 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(28500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(1500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(1500000000000000000n);
 
       });
 
       it("Should payholders upgradeable fee owner( ERROR POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -597,7 +609,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -606,7 +618,7 @@ import { ZeroAddress } from "ethers";
       });
 
       it("Should payholders upgradeable fee 0 ( ERROR POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -623,7 +635,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -632,7 +644,7 @@ import { ZeroAddress } from "ethers";
       });
 
       it("Should payholders upgradeable index (POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -649,7 +661,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -660,12 +672,12 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(10450000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(550000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(550000000000000000n);
 
       });
 
       it("Should payholders upgradeable index owner ( ERROR POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2 , wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -682,7 +694,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -691,7 +703,7 @@ import { ZeroAddress } from "ethers";
       });
 
       it("Should payholders upgradeable index 0 ( ERROR POOL40)", async function () {
-        const {pool40, ricecoin, otherAccount, usdt, account2} = await loadFixture(deployFixture);
+        const {pool40, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.transfer(otherAccount, AMOUNT);
         const IOther = ricecoin.connect(otherAccount);
         await IOther.approve(pool40.target, AMOUNT);
@@ -708,7 +720,7 @@ import { ZeroAddress } from "ethers";
         await IOtherPool.payholders(otherAccount);
 
         expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-        expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
 
         const IAccount = pool40.connect(account2);
 
@@ -763,7 +775,7 @@ import { ZeroAddress } from "ethers";
 
 
       it("Should riceswap router payholders", async function () {
-        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2} = await loadFixture(deployFixture);
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2, wallet} = await loadFixture(deployFixture);
           
           await ricecoin.transfer(otherAccount.address, AMOUNT);
           const IOtherApprove = ricecoin.connect(otherAccount);
@@ -785,12 +797,12 @@ import { ZeroAddress } from "ethers";
           console.log(`router payholders: ${txUsed?.gasUsed}`);
 
           expect(await usdt.balanceOf(otherAccount)).to.equal(9500000000000000000n);
-          expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+          expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
          
       });
 
       it("Should riceswap router validators", async function () {
-        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2, account3} = await loadFixture(deployFixture);
+        const {pool, riceswapRouter, otherAccount, ricecoin, usdt, account2, account3, wallet} = await loadFixture(deployFixture);
           
           await ricecoin.transfer(otherAccount.address, AMOUNT);
           const IOtherApprove = ricecoin.connect(otherAccount);
@@ -814,7 +826,7 @@ import { ZeroAddress } from "ethers";
           console.log(`router validator: ${txUsed?.gasUsed}`);
 
           expect(await usdt.balanceOf(otherAccount)).to.equal(8500000000000000000n);
-          expect(await usdt.balanceOf(account2)).to.equal(500000000000000000n);
+          expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000n);
           expect(await usdt.balanceOf(account3)).to.equal(1000000000000000000n);
          
       });
@@ -922,6 +934,27 @@ import { ZeroAddress } from "ethers";
 
         const IOtherRouter = riceswapRouter.connect(otherAccount);
         await expect(IOtherRouter.callbackDeposit(pool, 0n)).to.be.revertedWithCustomError(riceswapRouter, "IRiceswapAmount");          
+      });
+
+      it("GET ADDRESSES", async function () {
+        const {owner, otherAccount, account2, account3, account4, account5} = await loadFixture(deployFixture);
+          
+        console.log(`address owner: ${owner.address}`);
+        console.log(`address other: ${otherAccount.address}`);
+        console.log(`address admin: ${account2.address}`);
+        console.log(`address dev: ${account3.address}`);
+        console.log(`address marketing: ${account4.address}`);
+        console.log(`address donations: ${account5.address}`);
+
+        /*
+        address owner: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+        address other: 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+        address admin: 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+        address dev: 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+        address marketing: 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65
+        address donations: 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc
+        */
+        
       });
 
      });

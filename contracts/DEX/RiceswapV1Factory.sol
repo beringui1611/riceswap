@@ -7,20 +7,24 @@ import "./RiceswapV1Deployer.sol";
 contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
 
     address public owner;
+    address public dexWallet;
     uint16 public dexFee;
     uint256 timer = 30 *24 *60 *60; ///@dev Used to define the payment time for pools.
 
     
     mapping(address => address) public getPool;
     mapping(address => address) private _token0;
+    mapping(address => address) public presales;
 
     event PoolCreated(address indexed token0, address indexed token1, uint16 fee, address indexed pool); 
+    event PresaleCreated(address indexed token0, address indexed presale);
     event OwnerChanged(address indexed newOwner, address indexed oldOwner);
     event NewFee(uint256 indexed _fee);
 
-    constructor()
+    constructor(address _dexWallet)
     {
         owner = msg.sender;
+        dexWallet = _dexWallet;
         dexFee = 5;
     }
 
@@ -45,7 +49,7 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         if(index <= 0) revert IRiceswapIndexInvalid(index);
         if(token0 == _token0[token0]) revert IRiceswapAddressDifferentToken0(token0);
         
-        pool = deploy(address(this), token0, token1, msg.sender, timer, fee, index);
+        pool = deploy(address(this), token0, token1, msg.sender, dexWallet, timer, fee, index);
         getPool[token0] = pool; 
         _token0[token0] = token0;
 
@@ -75,13 +79,33 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         if(index <= 0) revert IRiceswapIndexInvalid(index);
         if(token0 == _token0[token0]) revert IRiceswapAddressDifferentToken0(token0);
         
-        pool = deploy40(address(this), token0, token1, msg.sender, timer, fee, index);
+        pool = deploy40(address(this), token0, token1, msg.sender, dexWallet, timer, fee, index);
         getPool[token0] = pool; 
         _token0[token0] = token0;
 
         emit PoolCreated(token0, token1, fee, pool);
 
         return pool;   
+    }
+
+    function createPresale(
+        uint256 range, 
+        uint16 price, 
+        address token0, 
+        address token1
+        ) external virtual returns(address presale){
+            if(range < 1000 * 1e18) revert IRiceswapRangeInvalid(range);
+            if(price <= 0) revert IRiceswapInvalidPrice(price);
+            if(address(token0) == address(0)) revert IRiceswapAddressZero(token0);
+            if(address(token1) == address(0)) revert IRiceswapAddressZero(token1);
+            if(token0 == presales[token0] ) revert IRiceswapAddressDifferentToken0(token0);
+
+            presale = deployPresale(msg.sender, range, price, token0, token1, address(this), dexWallet);
+            presales[token0] = presale;
+
+            emit PresaleCreated(token0, presale);
+
+            return presale;
     }
 
     // @riceswap -- manager --

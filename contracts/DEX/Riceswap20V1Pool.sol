@@ -7,7 +7,6 @@ import "./interfaces/IRiceswapV1Errors.sol";
 import "./libraries/Math.sol";
 import "./libraries/SecurityCalls.sol";
 
-//corrigir falha de qualquer user chamar a função por você
 
 ///@title Riceswap20V1Pool -- Fixed income --
 
@@ -17,7 +16,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
 
     address public immutable token1;
 
-    address public immutable admin;
+    address public owner;
 
     uint256 public immutable timer;
 
@@ -27,12 +26,15 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
 
     address public immutable factory;
 
+    address public immutable dexWallet;
+
     ///@dev Events emitted for every user request, keeping the pool informed
     event Farm(address indexed _to, uint256 indexed _amount, uint256 _timestamp);
     event RemoveFarm(address indexed _to, uint256 indexed _amount, uint256 _timestamp);
     event PayHolder(address indexed _to, uint256 indexed _txMonth, uint256 _timestamp);
     event Validator(address indexed _from, uint256 _txMonth, address indexed _validator, uint256 _txValidator);
     event Deposit(address indexed _from, address indexed _to, uint256 _amount);
+    event TransferedOwnership(address indexed oldOwner, address indexed newOwner);
 
 
     mapping(address => uint256) public farming; ///@dev Mapping storing users' invested token amounts. 
@@ -45,6 +47,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
         address _token0, 
         address _token1, 
         address _admin, 
+        address _dexWallet,
         uint256 _timer, 
         uint16 _fee, 
         uint64 _index
@@ -53,7 +56,8 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
         factory = _factory;
         token0 = _token0;
         token1 = _token1;
-        admin = _admin;
+        owner = _admin;
+        dexWallet = _dexWallet;
         timer = _timer;
         fee = _fee;
         index = _index;
@@ -132,8 +136,9 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
 
         timeLock[_msgSender] = block.timestamp;
         liquidity[address(this)] -= txMonth;
+        
       
-        safeTransferPayment(token1, txMonth - txFee, txFee, admin, _msgSender);
+        safeTransferPayment(token1, txMonth - txFee, txFee, dexWallet, _msgSender);
 
         emit PayHolder(_msgSender, txMonth, block.timestamp);
         }
@@ -169,7 +174,7 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
           timeLock[_from] = block.timestamp;
           liquidity[address(this)] -= txMonth;
 
-          safeTransferValidator(token1, _from, txMonth - txFee - txValidator, txFee, txValidator, admin, _msgSender);
+          safeTransferValidator(token1, _from, txMonth - txFee - txValidator, txFee, txValidator, dexWallet, _msgSender);
 
           emit Validator(_from, txMonth, _msgSender, txValidator);
         }
@@ -193,4 +198,19 @@ contract Riceswap20V1Pool is IRiceswapV1Errors, SafeTransfer, Math, SecurityCall
             return IRiceswapV1Factory(factory).getFee();
         }
 
+    function transferOwnership(
+        address _owner
+         ) external returns(address ret){
+            require(msg.sender == owner, "O");
+            address oldOwner;
+            assembly {
+                sstore(owner.slot, _owner)
+
+                ret := _owner
+                oldOwner := caller()
+            }
+
+            emit TransferedOwnership(oldOwner, _owner);
+         }
+    
 }

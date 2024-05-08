@@ -13,6 +13,9 @@
      async function deployFixture() {
        const [owner, otherAccount, account2, account3] = await ethers.getSigners();
 
+         const Wallet = await ethers.getContractFactory("RiceswapWallet");
+         const wallet = await Wallet.deploy();
+
          const RiceCoin = await ethers.getContractFactory("RiceCoin");
          const ricecoin = await RiceCoin.deploy();
 
@@ -20,15 +23,15 @@
          const usdt = await Usdt.deploy();
 
          const Factory = await ethers.getContractFactory("RiceswapV1Factory");
-         const factory = await Factory.deploy();
+         const factory = await Factory.deploy(wallet.target);
 
          const PreSale = await ethers.getContractFactory("RiceswapV1Saller");
-         const preSale = await PreSale.deploy(account2, 10000_000_000_000_000_000_000n, 1n, ricecoin.target, usdt.target, factory.target);
+         const preSale = await PreSale.deploy(account2, 10000_000_000_000_000_000_000n, 1n, ricecoin.target, usdt.target, factory.target, wallet.target);
 
          const Router = await ethers.getContractFactory("SallerV1Router");
          const router = await Router.deploy();
 
-       return {ricecoin, usdt, factory, preSale, router, otherAccount, account2, account3};
+       return {ricecoin, usdt, factory, preSale, router, otherAccount, account2, account3, wallet};
      }
 
      describe("Deployment", function () {
@@ -68,7 +71,7 @@
         await IOther.buy(otherAccount, AMOUNT);
 
         expect(await preSale._claim(otherAccount.address)).to.equal(AMOUNT);
-        expect(await preSale.limitMarking(ricecoin.target)).to.equal(RANGE - AMOUNT);
+        expect(await preSale.limitMarking(ricecoin.target)).to.equal(9000000000000000000000n);
         
       }); 
 
@@ -142,9 +145,9 @@
         await IOther.refund(otherAccount, AMOUNT);
 
         expect(await preSale._claim(otherAccount.address)).to.equal(0n);
-        expect(await preSale.limitMarking(ricecoin.target)).to.equal(RANGE);
-        expect(await usdt.balanceOf(otherAccount.address)).to.equal(AMOUNT);
-        expect(await usdt.balanceOf(preSale.target)).to.equal(0n)
+        expect(await preSale.limitMarking(ricecoin.target)).to.equal(10000000000000000000000n);
+        expect(await usdt.balanceOf(otherAccount.address)).to.equal(950000000000000000000n);
+        expect(await usdt.balanceOf(preSale.target)).to.equal(50000000000000000000n);
         
         
       }); 
@@ -237,7 +240,7 @@
 
 
       it("Should withdraw", async function () {
-        const {preSale, ricecoin, otherAccount, usdt, account2, factory} = await loadFixture(deployFixture);
+        const {preSale, ricecoin, otherAccount, usdt, account2, wallet} = await loadFixture(deployFixture);
         await ricecoin.approve(preSale.target, RANGE);
         await preSale.deposit(RANGE)
 
@@ -253,7 +256,7 @@
         await IAdmin.withdraw();
 
         expect(await usdt.balanceOf(account2)).to.equal(9500000000000000000000n);
-        expect(await usdt.balanceOf(factory.target)).to.equal(500000000000000000000n)
+        expect(await usdt.balanceOf(wallet)).to.equal(500000000000000000000n)
        
 
       });
@@ -277,6 +280,74 @@
 
 
     });
-    
+
+    it("Should presale buy ", async function () {
+      const {preSale, ricecoin, router, otherAccount, usdt} = await loadFixture(deployFixture);
+      await ricecoin.transfer(otherAccount, RANGE);
+      const other = ricecoin.connect(otherAccount);
+      await other.approve(router, RANGE);
+
+      const IOther = router.connect(otherAccount);
+
+      await IOther.callbackDeposit(preSale.target, RANGE);
+
+      await usdt.transfer(otherAccount, RANGE);
+      const OtherUsdt = usdt.connect(otherAccount);
+      await OtherUsdt.approve(router, RANGE);
+
+      await IOther.callbackBuy(preSale, RANGE);
+
+      expect(await preSale._claim(otherAccount)).to.equal(RANGE, "claim");
+      expect(await usdt.balanceOf(preSale.target)).to.equal(RANGE, "balance");
+      expect(await usdt.balanceOf(otherAccount)).to.equal(0n, "other");
+
+
     });
+
+    it("Should presale refund ", async function () {
+      const {preSale, ricecoin, router, otherAccount, usdt} = await loadFixture(deployFixture);
+      await ricecoin.transfer(otherAccount, RANGE);
+      const other = ricecoin.connect(otherAccount);
+      await other.approve(router, RANGE);
+
+      const IOther = router.connect(otherAccount);
+
+      await IOther.callbackDeposit(preSale.target, RANGE);
+
+      await usdt.transfer(otherAccount, RANGE);
+      const OtherUsdt = usdt.connect(otherAccount);
+      await OtherUsdt.approve(router, RANGE);
+
+      await IOther.callbackBuy(preSale, AMOUNT);
+
+      await IOther.callbackRefund(preSale, AMOUNT);
+
+      expect(await usdt.balanceOf(otherAccount)).to.equal(9950000000000000000000n);
+
+
+    });
+
+    it("Should presale claim ", async function () {
+      const {preSale, ricecoin, router, otherAccount, usdt} = await loadFixture(deployFixture);
+      await ricecoin.transfer(otherAccount, RANGE);
+      const other = ricecoin.connect(otherAccount);
+      await other.approve(router, RANGE);
+
+      const IOther = router.connect(otherAccount);
+
+      await IOther.callbackDeposit(preSale.target, RANGE);
+
+      await usdt.transfer(otherAccount, RANGE);
+      const OtherUsdt = usdt.connect(otherAccount);
+      await OtherUsdt.approve(router, RANGE);
+
+      await IOther.callbackBuy(preSale, RANGE);
+
+      await IOther.callbackClaim(preSale);
+
+      expect(await ricecoin.balanceOf(otherAccount)).to.equal(RANGE);
+
+    });
+    
+  });
 });
