@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./Riceswap20V1Pool.sol";
-import "./Riceswap40V1Pool.sol";
-import "./RiceswapV1Saller.sol";
-import "./interfaces/IRiceswapWallet.sol";
+import "./DEX-TOKENIZATION/Riceswap20V1Pool.sol";
+import "./DEX-TOKENIZATION/Riceswap40V1Pool.sol";
+import "./DEX-PRESALES/RiceswapV1Saller.sol";
 
 contract RiceswapV1Deployer {
 
@@ -42,6 +41,19 @@ contract RiceswapV1Deployer {
         address dexWallet;
     }
 
+    struct Order 
+    {
+        address owner;
+        address token0;
+        address token1;
+        int128 min;
+        int128 max;
+        uint256 quantity;
+        address dexWallet;
+        address factory;
+    }
+
+    Order public paramsOrder;
     PreSale public presaleParams;
     Parameters public parameters;
 
@@ -137,5 +149,19 @@ contract RiceswapV1Deployer {
            presale = address(newPresale);
            delete presale;
         }
+
+        // function deployOrder(
+        //     address owner,
+        //     address token0, 
+        //     address token1, 
+        //     int128 min, 
+        //     int128 max, 
+        //     uint256 quantity,
+        //     address dexWallet,
+        //     address factory
+        //     ) external returns(address order){
+        //         paramsOrder = Order({owner: owner, token0: token0, token1: token1, min: min, max: max, quantity: quantity, dexWallet: dexWallet, factory: factory});
+        //         bytes32 salt = keccak256(abi.encode(token0, token1, min, max));
+        //     }
 
 }

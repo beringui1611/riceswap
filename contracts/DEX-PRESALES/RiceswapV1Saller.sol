@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./libraries/SafeTransfers.sol";
-import "./interfaces/IRiceswapV1Errors.sol";
-import "./interfaces/IRiceswapV1Factory.sol";
-import "./libraries/SecurityCalls.sol";
+import "../libraries/SafeTransfers.sol";
+import "../interfaces/IRiceswapV1Errors.sol";
+import "../interfaces/IRiceswapV1Factory.sol";
+import "../libraries/SecurityCalls.sol";
 
 contract RiceswapV1Saller is SafeTransfer, IRiceswapV1Errors, SecurityCall{
 
