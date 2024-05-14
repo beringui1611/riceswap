@@ -88,25 +88,6 @@ contract RiceswapV1Factory is IRiceswapV1Errors, RiceswapV1Deployer{
         return pool;   
     }
 
-    function createPresale(
-        uint256 range, 
-        uint16 price, 
-        address token0, 
-        address token1
-        ) external virtual returns(address presale){
-            if(range < 1000 * 1e18) revert IRiceswapRangeInvalid(range);
-            if(price <= 0) revert IRiceswapInvalidPrice(price);
-            if(address(token0) == address(0)) revert IRiceswapAddressZero(token0);
-            if(address(token1) == address(0)) revert IRiceswapAddressZero(token1);
-            if(token0 == presales[token0] ) revert IRiceswapAddressDifferentToken0(token0);
-
-            presale = deployPresale(msg.sender, range, price, token0, token1, address(this), dexWallet);
-            presales[token0] = presale;
-
-            emit PresaleCreated(token0, presale);
-
-            return presale;
-    }
 
     // @riceswap -- manager --
     function setOwner(address _owner) external {
