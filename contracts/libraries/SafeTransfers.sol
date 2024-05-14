@@ -16,6 +16,7 @@ error RiceswapAllowanceInsufficient(uint256 _amount);
 error RiceswapTransferNotSuccess(bool _success);
 error RiceswapTransferNotSuccessPayment(bool _successOne, bool _successTwo);
 error RiceswapTransferNotSuccessValidator(bool _success1, bool _success2, bool success3);
+error RiceswapInsufficientQuantity(uint256 _quantity);
 
 
 /**
@@ -264,6 +265,24 @@ function safeTransferPayment(
 
             return (success, successDexFee);
             
+    }
+
+    function safeTransferSell(address token0, uint256 quantity) internal virtual returns(bool) {
+        IERC20 tkn0 = IERC20(token0);
+
+        if(quantity <= 0) revert RiceswapInsufficientQuantity(quantity);
+        if(tkn0.allowance(msg.sender, address(this)) <= quantity) revert RiceswapAllowanceInsufficient(quantity);
+
+        (
+            bool success
+
+        ) = tkn0.transferFrom(msg.sender, address(this), quantity);
+
+        if(!success){
+            revert RiceswapTransferNotSuccess(success);
+        }
+
+        return success;
     }
 
 }

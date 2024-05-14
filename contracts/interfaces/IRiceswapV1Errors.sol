@@ -40,4 +40,8 @@ interface IRiceswapV1Errors {
 
     error IRiceswapInvalidPrice(uint256 _range);
 
+   error IRiceswapInvalidMinAmount(uint256 _min);
+
+   error IRiceswapInvalidQuantity(uint256 _quantity);
+
 }

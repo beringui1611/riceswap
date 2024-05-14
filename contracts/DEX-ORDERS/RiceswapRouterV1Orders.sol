@@ -1,40 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./IAgreggatorInterface.sol";
 import "hardhat/console.sol";
 
 contract RiceswapRouterV1Orders {
 
-    address public ETH;
-    address public BTC;
-    address public USDT;
-    address public SOL;
-    address public BNB;
-    address public USDC;
-
-    constructor(
-        address _eth, 
-        address _btc, 
-        address _usdt, 
-        address _sol, 
-        address _bnb, 
-        address _usdc)
-        {
-            ETH = _eth;
-            BTC = _btc;
-            USDT = _usdt;
-            SOL = _sol;
-            BNB = _bnb;
-            USDC = _usdc;
-        }
+  
    
     struct Sell {
         address pool;
         address owner;
         address token0;
         address token1;
-        int128 min;
+        uint256 min;
         uint256 quantity;
     }
 

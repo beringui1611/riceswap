@@ -12,8 +12,12 @@ contract RiceswapV1Oracle {
     IAgreggatorInterface public usdt;
     IAgreggatorInterface public usdc;
 
-    uint256 public btcPrice;
-    uint256 public ethPrice;
+    uint256 public btcPrice = 62516;
+    uint256 public ethPrice = 3019;
+    uint256 public bnbPrice = 596;
+    uint256 public solPrice = 150;
+    uint256 public usdtPrice = 1;
+    uint256 public usdcPrice = 1;
 
     constructor(
         address _btc, 
@@ -62,6 +66,67 @@ contract RiceswapV1Oracle {
 
         return newFeed;
     }
+
+    function getFeedBnb() external returns(uint256) {
+        
+        (
+            ,int feed,,,
+        ) = bnb.latestRoundData();
+
+        uint256 newFeed = uint256(feed / 1e8);
+
+        assembly {
+            sstore(bnbPrice.slot, newFeed)
+        }
+
+        return newFeed;
+    }
+
+    function getFeedSol() external returns(uint256) {
+
+        (
+            ,int feed,,,
+        ) = sol.latestRoundData();
+
+        uint256 newFeed = uint256(feed / 1e8);
+
+        assembly {
+            sstore(solPrice.slot, newFeed)
+        }
+
+        return newFeed;
+    }
+
+    function getFeedUsdt() external returns(uint256) {
+
+        (
+            ,int feed,,,
+        ) = usdt.latestRoundData();
+
+        uint256 newFeed = uint256(feed / 1e8);
+
+        assembly {
+            sstore(usdtPrice.slot, newFeed)
+        }
+
+        return newFeed;
+    }
+
+    function getFeedUsdc() external returns(uint256) {
+
+        (
+            ,int feed,,,
+        ) = usdc.latestRoundData();
+
+        uint256 newFeed = uint256(feed / 1e8);
+
+        assembly {
+            sstore(usdcPrice.slot, newFeed)
+        }
+
+        return newFeed;
+    }
+    
 }
 
 
